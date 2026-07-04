@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CardVault — Import</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1216;
+    color: #e8ecef;
+    padding: 16px;
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 2px; }
+  h2 { font-size: 1.02rem; margin: 0 0 8px; }
+  p.sub { color: #9aa4ae; margin: 0 0 14px; font-size: 0.88rem; }
+  .panel { background: #191f26; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  video { width: 100%; border-radius: 8px; background: #000; display: block; }
+  .hidden { display: none !important; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button {
+    background: #4f9dff; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 0.95rem; cursor: pointer; margin-top: 8px;
+  }
+  button.secondary { background: transparent; border: 1px solid #3a434e; color: #e8ecef; }
+  button.danger { background: transparent; border: 1px solid #7a3b3b; color: #ff8f8f; padding: 6px 10px; margin: 0; font-size: 0.8rem; }
+  #status { font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
+  #status.ok { color: #35c46f; }
+  #status.err { color: #ff6b6b; }
+  #status.info { color: #9aa4ae; }
+  textarea, input, select {
+    background: #0c0f12; color: #e8ecef; border: 1px solid #2a313a; border-radius: 8px;
+    padding: 9px; font-size: 0.9rem; width: 100%;
+  }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; min-height: 90px; resize: vertical; }
+  label { display:block; font-size: 0.78rem; color: #9aa4ae; margin: 10px 0 4px; }
+  .card-item { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #22292f; }
+  .card-item:last-child { border-bottom: none; }
+  .swatch { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; }
+  .card-item .meta { flex: 1; min-width: 0; }
+  .card-item .name { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-item .desc { font-size: 0.76rem; color: #9aa4ae; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-item select { width: auto; padding: 4px 6px; font-size: 0.78rem; }
+  .count { color: #9aa4ae; font-size: 0.85rem; }
+  .note { font-size: 0.78rem; color: #7d8894; margin-top: 8px; }
+  .privacy { font-size: 0.8rem; color: #35c46f; }
+</style>
+</head>
+<body>
+
+<h1>CardVault — Import</h1>
+<p class="sub privacy">Alles gebeurt in je browser. Er wordt niets verstuurd.</p>
+
+<div class="panel">
+  <h2>Scannen</h2>
+  <p class="sub">Richt op een <b>2FA-QR</b>, een <b>Google Authenticator export-QR</b> (alle accounts tegelijk), of een <b>barcode</b> op een klantenkaart. Wordt automatisch herkend.</p>
+  <video id="video" playsinline muted></video>
+  <div class="row">
+    <button id="startBtn">📷 Scannen starten</button>
+    <button id="stopBtn" class="secondary hidden">Stoppen</button>
+  </div>
+  <div id="status" class="info">Camera uit.</div>
+</div>
+
+<div class="panel">
+  <h2>Handmatig toevoegen</h2>
+  <label>otpauth:// of otpauth-migration:// tekst</label>
+  <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
+  <button id="manualOtpBtn" class="secondary">Verwerken</button>
+  <label>Losse barcode (nummer + naam)</label>
+  <div class="row">
+    <input id="bcNum" placeholder="Nummer" style="flex:2">
+    <input id="bcName" placeholder="Naam" style="flex:1">
+  </div>
+  <button id="manualBcBtn" class="secondary">Barcode toevoegen</button>
+  <label>QR-code (tekst/URL + naam) — voor tickets, wifi, lidmaatschappen</label>
+  <div class="row">
+    <input id="qrData" placeholder="URL of tekst" style="flex:2">
+    <input id="qrName" placeholder="Naam" style="flex:1">
+  </div>
+  <button id="manualQrBtn" class="secondary">QR toevoegen</button>
+</div>
+
+<div class="panel">
+  <h2>Kaarten <span class="count" id="cardCount">(0)</span></h2>
+  <div id="cardList"></div>
+  <div id="emptyHint" class="note">Nog geen kaarten — scan of voeg toe.</div>
+</div>
+
+<div class="panel">
+  <h2>Naar horloge sturen</h2>
+  <p class="sub">Snelste manier: op je horloge open je CardVault → menu → <b>Sync</b>. Daar staat een <b>koppelcode</b>. Typ die hier in en druk versturen; daarna op het horloge op <b>Ophalen</b>.</p>
+  <div class="row">
+    <input id="pairCode" placeholder="Koppelcode (bijv. 4F2A)" maxlength="8" style="flex:1;text-transform:uppercase">
+    <button id="sendBtn">📲 Versturen</button>
+  </div>
+  <div id="sendStatus" class="note"></div>
+</div>
+
+<div class="panel">
+  <h2>Plakken in Garmin Connect</h2>
+  <p class="sub">Kopieer dit en plak in het veld <b>Kaarten (1/4)</b> van CardVault in Garmin Connect. Te lang? De blokken 2/4, 3/4 verschijnen automatisch.</p>
+  <div id="outputs"></div>
+  <button id="copyBtn">📋 Kopiëren</button>
+  <div id="copyStatus" class="note"></div>
+</div>
+
+<div class="panel">
+  <h2>Back-up / herstellen</h2>
+  <p class="sub">Plak hier een eerder opgeslagen blok om je kaarten terug te laden en te bewerken.</p>
+  <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
+  <button id="restoreBtn" class="secondary">Inladen</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CHUNK_SIZE = 1900;          // tekens per Garmin-veld
+  var COLORS = ["blue","green","orange","purple","red","dkblue","pink","dkgreen","yellow","dkred"];
+  var COLOR_HEX = {
+    blue:"#1e90ff", red:"#ff3b30", green:"#34c759", orange:"#ff9500", purple:"#af52de",
+    pink:"#ff2d92", yellow:"#ffd60a", dkblue:"#0a3d91", dkgreen:"#1b6b2f", dkred:"#8a1c1c",
+    ltgray:"#c8c8c8", dkgray:"#3a3a3a", white:"#ffffff"
+  };
+  var ALL_COLORS = Object.keys(COLOR_HEX);
+
+  var cards = [];                 // {type,name,sub,color,icon,data,extra,category}
+  var colorCursor = 0;
+
+  var els = {
+    video: document.getElementById('video'),
+    startBtn: document.getElementById('startBtn'),
+    stopBtn: document.getElementById('stopBtn'),
+    status: document.getElementById('status'),
+    cardList: document.getElementById('cardList'),
+    cardCount: document.getElementById('cardCount'),
+    emptyHint: document.getElementById('emptyHint'),
+    outputs: document.getElementById('outputs'),
+    copyBtn: document.getElementById('copyBtn'),
+    copyStatus: document.getElementById('copyStatus'),
+    manualOtp: document.getElementById('manualOtp'),
+    manualOtpBtn: document.getElementById('manualOtpBtn'),
+    bcNum: document.getElementById('bcNum'),
+    bcName: document.getElementById('bcName'),
+    manualBcBtn: document.getElementById('manualBcBtn'),
+    restoreIn: document.getElementById('restoreIn'),
+    restoreBtn: document.getElementById('restoreBtn')
+  };
+
+  function setStatus(msg, kind) {
+    els.status.textContent = msg;
+    els.status.className = kind || 'info';
+  }
+
+  // ---------- Base32 (voor migration-secrets) ----------
+  function base32Encode(bytes) {
+    var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = 0, value = 0, out = "";
+    for (var i = 0; i < bytes.length; i++) {
+      value = (value << 8) | bytes[i];
+      bits += 8;
+      while (bits >= 5) { out += alphabet[(value >>> (bits - 5)) & 31]; bits -= 5; }
+    }
+    if (bits > 0) { out += alphabet[(value << (5 - bits)) & 31]; }
+    return out;
+  }
+
+  function base64ToBytes(b64) {
+    var bin = atob(b64);
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
+    return out;
+  }
+
+  // ---------- Protobuf-mini voor otpauth-migration ----------
+  function readVarint(bytes, i) {
+    var result = 0, shift = 0, b;
+    do { b = bytes[i++]; result |= (b & 0x7f) << shift; shift += 7; } while (b & 0x80);
+    return [result >>> 0, i];
+  }
+  function skipField(bytes, i, wire) {
+    if (wire === 0) { return readVarint(bytes, i)[1]; }
+    if (wire === 2) { var r = readVarint(bytes, i); return r[1] + r[0]; }
+    if (wire === 5) { return i + 4; }
+    if (wire === 1) { return i + 8; }
+    return bytes.length;
+  }
+  function utf8(bytes) {
+    try { return new TextDecoder("utf-8").decode(bytes); } catch (e) { return ""; }
+  }
+
+  function parseOtpParams(msg) {
+    var i = 0, secret = null, name = "", issuer = "", digits = 6, type = 2, algo = 1;
+    while (i < msg.length) {
+      var tag = msg[i++];
+      var field = tag >> 3, wire = tag & 7;
+      if (field === 1 && wire === 2) { var r = readVarint(msg, i); i = r[1]; secret = msg.slice(i, i + r[0]); i += r[0]; }
+      else if (field === 2 && wire === 2) { var r2 = readVarint(msg, i); i = r2[1]; name = utf8(msg.slice(i, i + r2[0])); i += r2[0]; }
+      else if (field === 3 && wire === 2) { var r3 = readVarint(msg, i); i = r3[1]; issuer = utf8(msg.slice(i, i + r3[0])); i += r3[0]; }
+      else if (field === 4 && wire === 0) { var r4 = readVarint(msg, i); algo = r4[0]; i = r4[1]; }
+      else if (field === 5 && wire === 0) { var r5 = readVarint(msg, i); digits = (r5[0] === 2) ? 8 : 6; i = r5[1]; }
+      else if (field === 6 && wire === 0) { var r6 = readVarint(msg, i); type = r6[0]; i = r6[1]; }
+      else { i = skipField(msg, i, wire); }
+    }
+    return { secret: secret, name: name, issuer: issuer, digits: digits, type: type, algo: algo };
+  }
+
+  var ALGO_NAMES = { 1: "SHA1", 2: "SHA256", 3: "SHA512" };
+
+  function parseMigration(uri) {
+    var m = uri.match(/[?&]data=([^&]+)/);
+    if (!m) { throw new Error("geen data in migration-QR"); }
+    var b64 = decodeURIComponent(m[1]);
+    var bytes = base64ToBytes(b64);
+    var i = 0, added = 0;
+    while (i < bytes.length) {
+      var tag = bytes[i++];
+      var field = tag >> 3, wire = tag & 7;
+      if (field === 1 && wire === 2) {
+        var r = readVarint(bytes, i); i = r[1];
+        var sub = bytes.slice(i, i + r[0]); i += r[0];
+        var p = parseOtpParams(sub);
+        if (p.type === 2 && p.secret) { // alleen TOTP
+          addTotp(p.issuer || p.name, p.name, base32Encode(p.secret),
+                  ALGO_NAMES[p.algo] || "SHA1", p.digits, 30);
+          added++;
+        }
+      } else { i = skipField(bytes, i, wire); }
+    }
+    if (added === 0) { throw new Error("geen TOTP-accounts gevonden"); }
+    return added;
+  }
+
+  // ---------- otpauth:// (enkele code) ----------
+  function parseOtpAuth(text) {
+    var url = new URL(text);
+    if (url.protocol !== "otpauth:") { throw new Error("geen otpauth:// URI"); }
+    if (url.host.toLowerCase() !== "totp") { throw new Error("alleen TOTP wordt ondersteund"); }
+    var label = decodeURIComponent(url.pathname.replace(/^\//, ""));
+    var params = url.searchParams;
+    var secret = params.get("secret");
+    if (!secret) { throw new Error("geen secret in QR"); }
+    var issuer = params.get("issuer") || "";
+    var algo = (params.get("algorithm") || "SHA1").toUpperCase();
+    var digits = parseInt(params.get("digits") || "6", 10);
+    var period = parseInt(params.get("period") || "30", 10);
+    var account = label;
+    if (label.indexOf(":") !== -1) {
+      var parts = label.split(":");
+      if (!issuer) { issuer = parts[0]; }
+      account = parts.slice(1).join(":");
+    }
+    if (!issuer) { issuer = label; }
+    addTotp(issuer, account, secret, algo, digits, period);
+  }
+
+  // ---------- Kaart-toevoegers ----------
+  function nextColor() { var c = COLORS[colorCursor % COLORS.length]; colorCursor++; return c; }
+
+  function isDuplicate(type, data) {
+    return cards.some(function (c) { return c.type === type && c.data === data; });
+  }
+
+  function addTotp(issuer, account, secret, algo, digits, period) {
+    if (isDuplicate("totp", secret)) { return false; }
+    cards.push({
+      type: "totp", name: issuer || "2FA", sub: account || "", color: "dkgray",
+      icon: "lock", data: secret, extra: algo + ":" + digits + ":" + period, category: "2FA"
+    });
+    render();
+    return true;
+  }
+
+  function addBarcode(name, number, fmt) {
+    if (isDuplicate("barcode", number)) { return false; }
+    cards.push({
+      type: "barcode", name: name || "Kaart", sub: "", color: nextColor(),
+      icon: "card", data: number, extra: fmt, category: "Overig"
+    });
+    render();
+    return true;
+  }
+
+  function addQr(name, data) {
+    if (isDuplicate("qr", data)) { return false; }
+    // Ruwe schatting: het horloge ondersteunt QR-versies 1-10 byte-mode ~ tot ~230 tekens.
+    if (data.length > 230) { setStatus("QR-tekst te lang (max ~230 tekens).", "err"); return false; }
+    cards.push({
+      type: "qr", name: name || "QR", sub: "", color: nextColor(),
+      icon: "ticket", data: data, extra: "QR", category: "Overig"
+    });
+    render();
+    return true;
+  }
+
+  // ---------- ZXing scanner ----------
+  var reader = null;
+
+  function barcodeFormatName(fmtEnum) {
+    var BF = ZXing.BarcodeFormat;
+    if (fmtEnum === BF.QR_CODE) { return "QR"; }
+    if (fmtEnum === BF.EAN_13) { return "EAN13"; }
+    return "CODE128"; // CODE_128 en alle overige 1D vallen terug op CODE128
+  }
+
+  function handleResult(text, fmtEnum) {
+    var BF = ZXing.BarcodeFormat;
+    try {
+      if (fmtEnum === BF.QR_CODE) {
+        if (/^otpauth-migration:\/\//i.test(text)) {
+          var n = parseMigration(text);
+          setStatus("✓ " + n + " 2FA-account(s) geïmporteerd", "ok");
+        } else if (/^otpauth:\/\//i.test(text)) {
+          parseOtpAuth(text);
+          setStatus("✓ 2FA-code toegevoegd", "ok");
+        } else {
+          // Vrije QR-inhoud (ticket, wifi, url) -> als QR-kaart; het horloge toont 'm.
+          var qadded = addQr("QR " + (cards.length + 1), text);
+          setStatus(qadded ? "✓ QR-code toegevoegd" : "Al toegevoegd of te lang", qadded ? "ok" : "info");
+        }
+      } else {
+        var fmt = barcodeFormatName(fmtEnum);
+        var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
+        setStatus(added ? ("✓ Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+      }
+    } catch (e) {
+      setStatus("Kon niet verwerken: " + e.message, "err");
+    }
+  }
+
+  function startScan() {
+    if (typeof ZXing === "undefined") { setStatus("Scanner-bibliotheek niet geladen (internet nodig).", "err"); return; }
+    reader = new ZXing.BrowserMultiFormatReader();
+    setStatus("Camera starten…", "info");
+    reader.decodeFromVideoDevice(null, els.video, function (result, err) {
+      if (result) { handleResult(result.getText(), result.getBarcodeFormat()); }
+    }).then(function () {
+      setStatus("Richt op een QR of barcode…", "info");
+      els.startBtn.classList.add("hidden");
+      els.stopBtn.classList.remove("hidden");
+    }).catch(function (e) {
+      setStatus("Kon camera niet openen: " + e.message, "err");
+    });
+  }
+
+  function stopScan() {
+    if (reader) { reader.reset(); reader = null; }
+    els.startBtn.classList.remove("hidden");
+    els.stopBtn.classList.add("hidden");
+    setStatus("Camera uit.", "info");
+  }
+
+  // ---------- Render kaartenlijst + output ----------
+  function escapePipe(s) { return String(s).replace(/\|/g, "\\|"); }
+
+  function cardLine(c) {
+    return [c.type, escapePipe(c.name), escapePipe(c.sub), c.color, c.icon,
+            escapePipe(c.data), c.extra, c.category].join("|");
+  }
+
+  function render() {
+    els.cardCount.textContent = "(" + cards.length + ")";
+    els.emptyHint.style.display = cards.length ? "none" : "block";
+    els.cardList.innerHTML = "";
+
+    cards.forEach(function (c, idx) {
+      var row = document.createElement("div");
+      row.className = "card-item";
+
+      var sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.style.background = COLOR_HEX[c.color] || "#888";
+      row.appendChild(sw);
+
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      var nm = document.createElement("div");
+      nm.className = "name";
+      var ic = (c.type === "totp") ? "🔐 " : (c.type === "qr" ? "▦ " : "▊▎ ");
+      nm.textContent = ic + c.name;
+      var ds = document.createElement("div");
+      ds.className = "desc";
+      var detail = (c.type === "totp") ? c.extra : (c.type === "qr" ? c.data : c.extra + " · " + c.data);
+      ds.textContent = (c.sub ? c.sub + " · " : "") + detail;
+      meta.appendChild(nm); meta.appendChild(ds);
+      row.appendChild(meta);
+
+      var sel = document.createElement("select");
+      ALL_COLORS.forEach(function (col) {
+        var o = document.createElement("option");
+        o.value = col; o.textContent = col;
+        if (col === c.color) { o.selected = true; }
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change", function () { c.color = sel.value; sw.style.background = COLOR_HEX[c.color]; buildOutput(); });
+      row.appendChild(sel);
+
+      var del = document.createElement("button");
+      del.className = "danger";
+      del.textContent = "✕";
+      del.addEventListener("click", function () { cards.splice(idx, 1); render(); });
+      row.appendChild(del);
+
+      els.cardList.appendChild(row);
+    });
+
+    buildOutput();
+  }
+
+  function buildOutput() {
+    var lines = cards.map(cardLine);
+    // Verdeel over chunks van max CHUNK_SIZE tekens (hele regels bij elkaar).
+    var chunks = [""];
+    lines.forEach(function (line) {
+      var last = chunks[chunks.length - 1];
+      var candidate = last.length ? (last + "\n" + line) : line;
+      if (candidate.length > CHUNK_SIZE && last.length) { chunks.push(line); }
+      else { chunks[chunks.length - 1] = candidate; }
+    });
+
+    els.outputs.innerHTML = "";
+    chunks.forEach(function (chunk, i) {
+      if (chunks.length > 1 || i === 0) {
+        var lbl = document.createElement("label");
+        lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
+        els.outputs.appendChild(lbl);
+      }
+      var ta = document.createElement("textarea");
+      ta.readOnly = true;
+      ta.value = chunk;
+      ta.dataset.chunk = i;
+      els.outputs.appendChild(ta);
+    });
+  }
+
+  // ---------- Restore ----------
+  function restore(text) {
+    var lines = text.split("\n");
+    var n = 0;
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line) { return; }
+      var f = splitEscaped(line, "|");
+      if (f.length < 6) { return; }
+      var type = f[0].toLowerCase();
+      var card = {
+        type: type, name: f[1], sub: f[2], color: f[3] || (type === "totp" ? "dkgray" : "blue"),
+        icon: f[4] || (type === "totp" ? "lock" : "card"), data: f[5],
+        extra: f[6] || (type === "totp" ? "SHA1:6:30" : "CODE128"),
+        category: f[7] || (type === "totp" ? "2FA" : "Overig")
+      };
+      if (!isDuplicate(card.type, card.data)) { cards.push(card); n++; }
+    });
+    render();
+    setStatus(n + " kaart(en) ingeladen", n ? "ok" : "err");
+  }
+
+  function splitEscaped(text, sep) {
+    var ph = "";
+    var protectedText = text.split("\\" + sep).join(ph);
+    return protectedText.split(sep).map(function (p) { return p.split(ph).join(sep).trim(); });
+  }
+
+  // ---------- Events ----------
+  els.startBtn.addEventListener("click", startScan);
+  els.stopBtn.addEventListener("click", stopScan);
+  els.copyBtn.addEventListener("click", function () {
+    var all = cards.map(cardLine).join("\n");
+    navigator.clipboard.writeText(all).then(function () {
+      els.copyStatus.textContent = "Alle kaarten gekopieerd. (Als je >1 blok hebt: kopieer elk veld apart.)";
+    }, function () {
+      els.copyStatus.textContent = "Kon niet kopiëren — selecteer de tekst handmatig.";
+    });
+  });
+  els.manualOtpBtn.addEventListener("click", function () {
+    var t = els.manualOtp.value.trim();
+    if (!t) { return; }
+    try {
+      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); setStatus("✓ " + n + " account(s)", "ok"); }
+      else { parseOtpAuth(t); setStatus("✓ Toegevoegd", "ok"); }
+      els.manualOtp.value = "";
+    } catch (e) { setStatus("Fout: " + e.message, "err"); }
+  });
+  els.manualBcBtn.addEventListener("click", function () {
+    var num = els.bcNum.value.trim();
+    if (!num) { return; }
+    var fmt = /^\d{13}$/.test(num) ? "EAN13" : "CODE128";
+    addBarcode(els.bcName.value.trim() || "Kaart", num, fmt);
+    els.bcNum.value = ""; els.bcName.value = "";
+    setStatus("✓ Barcode toegevoegd", "ok");
+  });
+  document.getElementById("manualQrBtn").addEventListener("click", function () {
+    var d = document.getElementById("qrData").value.trim();
+    if (!d) { return; }
+    if (addQr(document.getElementById("qrName").value.trim() || "QR", d)) {
+      document.getElementById("qrData").value = ""; document.getElementById("qrName").value = "";
+      setStatus("✓ QR toegevoegd", "ok");
+    }
+  });
+  els.restoreBtn.addEventListener("click", function () {
+    var t = els.restoreIn.value.trim();
+    if (t) { restore(t); els.restoreIn.value = ""; }
+  });
+
+  var pairCode = document.getElementById("pairCode");
+  var sendBtn = document.getElementById("sendBtn");
+  var sendStatus = document.getElementById("sendStatus");
+  sendBtn.addEventListener("click", function () {
+    var code = (pairCode.value || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) { sendStatus.textContent = "Vul een geldige koppelcode in."; return; }
+    if (cards.length === 0) { sendStatus.textContent = "Nog geen kaarten om te sturen."; return; }
+    var body = JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") });
+    sendStatus.textContent = "Versturen…";
+    fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.ok) { sendStatus.textContent = "✓ " + j.count + " kaart(en) verstuurd. Druk nu op je horloge op Ophalen."; }
+        else { sendStatus.textContent = "Fout: " + (j.error || "onbekend"); }
+      })
+      .catch(function (e) { sendStatus.textContent = "Kon niet versturen: " + e.message; });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

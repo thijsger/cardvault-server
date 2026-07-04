@@ -1,0 +1,13 @@
+{
+  "name": "cardvault-server",
+  "version": "0.1.0",
+  "description": "CardVault — sync tussen webapp en Garmin-horloge via koppelcode",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
