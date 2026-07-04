@@ -3,127 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CardVault — Import</title>
+<title>CardVault</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    --bg: #0b0e13;
+    --bg2: #0f141b;
+    --panel: #141a22;
+    --panel2: #1a212b;
+    --line: #232c38;
+    --line2: #2e3947;
+    --text: #eef2f6;
+    --muted: #8b97a6;
+    --faint: #5b6672;
+    --accent: #5b9dff;
+    --accent2: #7c5cff;
+    --ok: #35c46f;
+    --err: #ff6b6b;
+    --warn: #ffb038;
+    --radius: 16px;
+  }
   * { box-sizing: border-box; }
+  html, body { margin: 0; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f1216;
-    color: #e8ecef;
-    padding: 16px;
-    max-width: 680px;
-    margin: 0 auto;
-    line-height: 1.4;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -200px, rgba(124,92,255,0.16), transparent 70%),
+      radial-gradient(900px 500px at 100% 0%, rgba(91,157,255,0.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    min-height: 100vh;
   }
-  h1 { font-size: 1.3rem; margin: 0 0 2px; }
-  h2 { font-size: 1.02rem; margin: 0 0 8px; }
-  p.sub { color: #9aa4ae; margin: 0 0 14px; font-size: 0.88rem; }
-  .panel { background: #191f26; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-  video { width: 100%; border-radius: 8px; background: #000; display: block; }
-  .hidden { display: none !important; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 18px 80px; }
+
+  header.hero { text-align: center; margin-bottom: 26px; }
+  .logo {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .logo .mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 18px rgba(91,157,255,0.4);
+  }
+  .logo .mark svg { width: 17px; height: 17px; }
+  .tagline { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+  .privacy-badge {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-size: 0.78rem; color: var(--ok);
+    background: rgba(53,196,111,0.10); border: 1px solid rgba(53,196,111,0.25);
+    padding: 5px 11px; border-radius: 999px;
+  }
+  .privacy-badge svg { width: 13px; height: 13px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg2));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 30px rgba(0,0,0,0.25);
+  }
+  .panel h2 {
+    font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin: 0 0 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel h2 svg { width: 15px; height: 15px; color: var(--accent); }
+  .hint { color: var(--faint); font-size: 0.82rem; margin: -6px 0 14px; }
+
+  video {
+    width: 100%; border-radius: 12px; background: #000; display: block;
+    aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid var(--line);
+  }
+  video.hidden { display: none; }
+
+  .dropzone {
+    border: 1.5px dashed var(--line2); border-radius: 12px;
+    padding: 22px; text-align: center; color: var(--muted);
+    cursor: pointer; transition: border-color .15s, background .15s;
+    font-size: 0.88rem;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: rgba(91,157,255,0.06); color: var(--text); }
+  .dropzone svg { width: 26px; height: 26px; color: var(--faint); margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
   button {
-    background: #4f9dff; color: #fff; border: none; border-radius: 8px;
-    padding: 10px 16px; font-size: 0.95rem; cursor: pointer; margin-top: 8px;
+    appearance: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 0.9rem; font-weight: 600;
+    padding: 11px 16px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .05s, filter .15s, background .15s;
   }
-  button.secondary { background: transparent; border: 1px solid #3a434e; color: #e8ecef; }
-  button.danger { background: transparent; border: 1px solid #7a3b3b; color: #ff8f8f; padding: 6px 10px; margin: 0; font-size: 0.8rem; }
-  #status { font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
-  #status.ok { color: #35c46f; }
-  #status.err { color: #ff6b6b; }
-  #status.info { color: #9aa4ae; }
-  textarea, input, select {
-    background: #0c0f12; color: #e8ecef; border: 1px solid #2a313a; border-radius: 8px;
-    padding: 9px; font-size: 0.9rem; width: 100%;
+  button:active { transform: translateY(1px); }
+  button svg { width: 16px; height: 16px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 6px 20px rgba(91,157,255,0.30); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; border: 1px solid var(--line2); color: var(--text); }
+  .btn-ghost:hover { background: var(--panel2); }
+  .btn-wide { width: 100%; }
+
+  label { display: block; font-size: 0.78rem; color: var(--muted); margin: 14px 0 6px; font-weight: 500; }
+  input, textarea, select {
+    width: 100%; font-family: inherit; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line2); border-radius: 10px;
+    padding: 11px 12px; font-size: 0.9rem; transition: border-color .15s;
   }
-  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; min-height: 90px; resize: vertical; }
-  label { display:block; font-size: 0.78rem; color: #9aa4ae; margin: 10px 0 4px; }
-  .card-item { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #22292f; }
-  .card-item:last-child { border-bottom: none; }
-  .swatch { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; }
-  .card-item .meta { flex: 1; min-width: 0; }
-  .card-item .name { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-item .desc { font-size: 0.76rem; color: #9aa4ae; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-item select { width: auto; padding: 4px 6px; font-size: 0.78rem; }
-  .count { color: #9aa4ae; font-size: 0.85rem; }
-  .note { font-size: 0.78rem; color: #7d8894; margin-top: 8px; }
-  .privacy { font-size: 0.8rem; color: #35c46f; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; min-height: 86px; resize: vertical; line-height: 1.5; }
+
+  .status { font-size: 0.85rem; margin-top: 12px; min-height: 1.2em; display: flex; align-items: center; gap: 7px; }
+  .status svg { width: 14px; height: 14px; flex: 0 0 auto; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+  .status.info { color: var(--muted); }
+
+  /* kaartenlijst */
+  .cards-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .count-pill { font-size: 0.75rem; color: var(--muted); background: var(--panel2); padding: 3px 10px; border-radius: 999px; }
+  .card-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-row:last-child { border-bottom: none; }
+  .chip {
+    width: 42px; height: 28px; border-radius: 6px; flex: 0 0 auto; position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .chip::after {
+    content: ""; position: absolute; left: 6px; top: 7px; width: 11px; height: 9px;
+    border-radius: 2px; background: rgba(212,175,55,0.9);
+  }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-name { font-size: 0.94rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; }
+  .card-name .type-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; color: var(--faint); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 5px; }
+  .card-desc { font-size: 0.76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  select.color-sel { width: auto; padding: 6px 8px; font-size: 0.76rem; }
+  .icon-btn { background: transparent; border: none; color: var(--faint); padding: 6px; cursor: pointer; border-radius: 8px; }
+  .icon-btn:hover { color: var(--err); background: rgba(255,107,107,0.08); }
+  .icon-btn svg { width: 16px; height: 16px; }
+  .empty { color: var(--faint); font-size: 0.85rem; text-align: center; padding: 18px 0; }
+
+  .output-block { margin-bottom: 12px; }
+  .pair-preview { font-variant-numeric: tabular-nums; letter-spacing: 0.15em; }
+
+  .divider { height: 1px; background: var(--line); margin: 16px 0; border: none; }
+  .steps { counter-reset: step; padding: 0; margin: 0 0 14px; list-style: none; }
+  .steps li { position: relative; padding-left: 30px; margin-bottom: 8px; font-size: 0.85rem; color: var(--muted); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 0; width: 20px; height: 20px;
+    background: var(--panel2); border: 1px solid var(--line2); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: var(--text);
+  }
+  footer { text-align: center; color: var(--faint); font-size: 0.75rem; margin-top: 30px; }
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<h1>CardVault — Import</h1>
-<p class="sub privacy">Alles gebeurt in je browser. Er wordt niets verstuurd.</p>
+  <header class="hero">
+    <div class="logo">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+      </span>
+      CardVault
+    </div>
+    <div class="tagline">Je kaarten, codes en 2FA — klaar voor je horloge.</div>
+    <div class="privacy-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Alles blijft in je browser
+    </div>
+  </header>
 
-<div class="panel">
-  <h2>Scannen</h2>
-  <p class="sub">Richt op een <b>2FA-QR</b>, een <b>Google Authenticator export-QR</b> (alle accounts tegelijk), of een <b>barcode</b> op een klantenkaart. Wordt automatisch herkend.</p>
-  <video id="video" playsinline muted></video>
-  <div class="row">
-    <button id="startBtn">📷 Scannen starten</button>
-    <button id="stopBtn" class="secondary hidden">Stoppen</button>
-  </div>
-  <div id="status" class="info">Camera uit.</div>
-</div>
+  <!-- Scannen -->
+  <section class="panel">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+      Scannen
+    </h2>
+    <p class="hint">Richt op een 2FA-QR, een Google Authenticator export-QR (alle accounts tegelijk), of een barcode. Wordt automatisch herkend.</p>
+    <video id="video" class="hidden" playsinline muted></video>
+    <div class="row">
+      <button id="startBtn" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Camera starten
+      </button>
+      <button id="stopBtn" class="btn-ghost hidden">Stoppen</button>
+    </div>
 
-<div class="panel">
-  <h2>Handmatig toevoegen</h2>
-  <label>otpauth:// of otpauth-migration:// tekst</label>
-  <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
-  <button id="manualOtpBtn" class="secondary">Verwerken</button>
-  <label>Losse barcode (nummer + naam)</label>
-  <div class="row">
-    <input id="bcNum" placeholder="Nummer" style="flex:2">
-    <input id="bcName" placeholder="Naam" style="flex:1">
-  </div>
-  <button id="manualBcBtn" class="secondary">Barcode toevoegen</button>
-  <label>QR-code (tekst/URL + naam) — voor tickets, wifi, lidmaatschappen</label>
-  <div class="row">
-    <input id="qrData" placeholder="URL of tekst" style="flex:2">
-    <input id="qrName" placeholder="Naam" style="flex:1">
-  </div>
-  <button id="manualQrBtn" class="secondary">QR toevoegen</button>
-</div>
+    <hr class="divider">
 
-<div class="panel">
-  <h2>Kaarten <span class="count" id="cardCount">(0)</span></h2>
-  <div id="cardList"></div>
-  <div id="emptyHint" class="note">Nog geen kaarten — scan of voeg toe.</div>
-</div>
+    <div id="dropzone" class="dropzone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+      Sleep een afbeelding hierheen of <b>klik om te uploaden</b><br>
+      <span style="font-size:0.76rem;color:var(--faint)">een screenshot van een QR- of barcode</span>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
 
-<div class="panel">
-  <h2>Naar horloge sturen</h2>
-  <p class="sub">Snelste manier: op je horloge open je CardVault → menu → <b>Sync</b>. Daar staat een <b>koppelcode</b>. Typ die hier in en druk versturen; daarna op het horloge op <b>Ophalen</b>.</p>
-  <div class="row">
-    <input id="pairCode" placeholder="Koppelcode (bijv. 4F2A)" maxlength="8" style="flex:1;text-transform:uppercase">
-    <button id="sendBtn">📲 Versturen</button>
-  </div>
-  <div id="sendStatus" class="note"></div>
-</div>
+    <div id="status" class="status info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      Camera uit.
+    </div>
+  </section>
 
-<div class="panel">
-  <h2>Plakken in Garmin Connect</h2>
-  <p class="sub">Kopieer dit en plak in het veld <b>Kaarten (1/4)</b> van CardVault in Garmin Connect. Te lang? De blokken 2/4, 3/4 verschijnen automatisch.</p>
-  <div id="outputs"></div>
-  <button id="copyBtn">📋 Kopiëren</button>
-  <div id="copyStatus" class="note"></div>
-</div>
+  <!-- Handmatig -->
+  <section class="panel">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Handmatig toevoegen
+    </h2>
+    <label>2FA — otpauth:// of otpauth-migration:// tekst</label>
+    <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
+    <button id="manualOtpBtn" class="btn-ghost" style="margin-top:8px">Verwerken</button>
 
-<div class="panel">
-  <h2>Back-up / herstellen</h2>
-  <p class="sub">Plak hier een eerder opgeslagen blok om je kaarten terug te laden en te bewerken.</p>
-  <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
-  <button id="restoreBtn" class="secondary">Inladen</button>
+    <label>Barcode — nummer + naam</label>
+    <div class="grid2">
+      <input id="bcNum" placeholder="Nummer">
+      <input id="bcName" placeholder="Naam">
+    </div>
+    <button id="manualBcBtn" class="btn-ghost" style="margin-top:8px">Barcode toevoegen</button>
+
+    <label>QR — URL of tekst + naam (tickets, wifi, lidmaatschap)</label>
+    <div class="grid2">
+      <input id="qrData" placeholder="URL of tekst">
+      <input id="qrName" placeholder="Naam">
+    </div>
+    <button id="manualQrBtn" class="btn-ghost" style="margin-top:8px">QR toevoegen</button>
+  </section>
+
+  <!-- Kaarten -->
+  <section class="panel">
+    <div class="cards-head">
+      <h2 style="margin:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Kaarten
+      </h2>
+      <span class="count-pill" id="cardCount">0</span>
+    </div>
+    <div id="cardList"></div>
+    <div id="emptyHint" class="empty">Nog geen kaarten — scan, upload of voeg handmatig toe.</div>
+  </section>
+
+  <!-- Naar horloge -->
+  <section class="panel">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="10" rx="2"/><path d="M9 7V4h6v3M9 17v3h6v-3"/></svg>
+      Naar horloge sturen
+    </h2>
+    <ol class="steps">
+      <li>Open CardVault op je horloge, dan het menu en <b>Sync</b>.</li>
+      <li>Typ de getoonde koppelcode hieronder in en verstuur.</li>
+      <li>Tik op je horloge op <b>Ophalen</b>.</li>
+    </ol>
+    <div class="row">
+      <input id="pairCode" placeholder="KOPPELCODE" maxlength="8" class="pair-preview" style="flex:1;text-transform:uppercase;text-align:center;font-weight:700">
+      <button id="sendBtn" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+        Versturen
+      </button>
+    </div>
+    <div id="sendStatus" class="status info"></div>
+  </section>
+
+  <!-- Plakken -->
+  <section class="panel">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Of plakken in Garmin Connect
+    </h2>
+    <p class="hint">Zonder horloge-sync: kopieer dit blok en plak het in het veld Kaarten (1/4) van CardVault. Te lang? De blokken 2/4, 3/4 verschijnen vanzelf.</p>
+    <div id="outputs"></div>
+    <button id="copyBtn" class="btn-ghost btn-wide">Kopiëren</button>
+    <div id="copyStatus" class="status info"></div>
+  </section>
+
+  <!-- Backup -->
+  <section class="panel">
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+      Back-up en herstellen
+    </h2>
+    <p class="hint">Plak een eerder opgeslagen blok om je kaarten terug te laden en te bewerken.</p>
+    <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
+    <button id="restoreBtn" class="btn-ghost" style="margin-top:8px">Inladen</button>
+  </section>
+
+  <footer>CardVault — lokaal, privacyvriendelijk. Geen account nodig.</footer>
 </div>
 
 <script>
 (function () {
   "use strict";
 
-  var CHUNK_SIZE = 1900;          // tekens per Garmin-veld
+  var CHUNK_SIZE = 1900;
   var COLORS = ["blue","green","orange","purple","red","dkblue","pink","dkgreen","yellow","dkred"];
   var COLOR_HEX = {
     blue:"#1e90ff", red:"#ff3b30", green:"#34c759", orange:"#ff9500", purple:"#af52de",
@@ -132,14 +311,23 @@
   };
   var ALL_COLORS = Object.keys(COLOR_HEX);
 
-  var cards = [];                 // {type,name,sub,color,icon,data,extra,category}
+  var cards = [];
   var colorCursor = 0;
+
+  var ICON = {
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+    err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
+  };
 
   var els = {
     video: document.getElementById('video'),
     startBtn: document.getElementById('startBtn'),
     stopBtn: document.getElementById('stopBtn'),
     status: document.getElementById('status'),
+    dropzone: document.getElementById('dropzone'),
+    fileInput: document.getElementById('fileInput'),
     cardList: document.getElementById('cardList'),
     cardCount: document.getElementById('cardCount'),
     emptyHint: document.getElementById('emptyHint'),
@@ -156,31 +344,28 @@
   };
 
   function setStatus(msg, kind) {
-    els.status.textContent = msg;
-    els.status.className = kind || 'info';
+    els.status.className = "status " + (kind || 'info');
+    els.status.innerHTML = (ICON[kind] || ICON.info) + "<span>" + msg + "</span>";
   }
 
-  // ---------- Base32 (voor migration-secrets) ----------
+  // ---------- Base32 ----------
   function base32Encode(bytes) {
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     var bits = 0, value = 0, out = "";
     for (var i = 0; i < bytes.length; i++) {
-      value = (value << 8) | bytes[i];
-      bits += 8;
+      value = (value << 8) | bytes[i]; bits += 8;
       while (bits >= 5) { out += alphabet[(value >>> (bits - 5)) & 31]; bits -= 5; }
     }
     if (bits > 0) { out += alphabet[(value << (5 - bits)) & 31]; }
     return out;
   }
-
   function base64ToBytes(b64) {
-    var bin = atob(b64);
-    var out = new Uint8Array(bin.length);
+    var bin = atob(b64); var out = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
     return out;
   }
 
-  // ---------- Protobuf-mini voor otpauth-migration ----------
+  // ---------- protobuf-mini voor migration ----------
   function readVarint(bytes, i) {
     var result = 0, shift = 0, b;
     do { b = bytes[i++]; result |= (b & 0x7f) << shift; shift += 7; } while (b & 0x80);
@@ -193,15 +378,12 @@
     if (wire === 1) { return i + 8; }
     return bytes.length;
   }
-  function utf8(bytes) {
-    try { return new TextDecoder("utf-8").decode(bytes); } catch (e) { return ""; }
-  }
+  function utf8(bytes) { try { return new TextDecoder("utf-8").decode(bytes); } catch (e) { return ""; } }
 
   function parseOtpParams(msg) {
     var i = 0, secret = null, name = "", issuer = "", digits = 6, type = 2, algo = 1;
     while (i < msg.length) {
-      var tag = msg[i++];
-      var field = tag >> 3, wire = tag & 7;
+      var tag = msg[i++]; var field = tag >> 3, wire = tag & 7;
       if (field === 1 && wire === 2) { var r = readVarint(msg, i); i = r[1]; secret = msg.slice(i, i + r[0]); i += r[0]; }
       else if (field === 2 && wire === 2) { var r2 = readVarint(msg, i); i = r2[1]; name = utf8(msg.slice(i, i + r2[0])); i += r2[0]; }
       else if (field === 3 && wire === 2) { var r3 = readVarint(msg, i); i = r3[1]; issuer = utf8(msg.slice(i, i + r3[0])); i += r3[0]; }
@@ -212,25 +394,21 @@
     }
     return { secret: secret, name: name, issuer: issuer, digits: digits, type: type, algo: algo };
   }
-
   var ALGO_NAMES = { 1: "SHA1", 2: "SHA256", 3: "SHA512" };
 
   function parseMigration(uri) {
     var m = uri.match(/[?&]data=([^&]+)/);
     if (!m) { throw new Error("geen data in migration-QR"); }
-    var b64 = decodeURIComponent(m[1]);
-    var bytes = base64ToBytes(b64);
+    var bytes = base64ToBytes(decodeURIComponent(m[1]));
     var i = 0, added = 0;
     while (i < bytes.length) {
-      var tag = bytes[i++];
-      var field = tag >> 3, wire = tag & 7;
+      var tag = bytes[i++]; var field = tag >> 3, wire = tag & 7;
       if (field === 1 && wire === 2) {
         var r = readVarint(bytes, i); i = r[1];
         var sub = bytes.slice(i, i + r[0]); i += r[0];
         var p = parseOtpParams(sub);
-        if (p.type === 2 && p.secret) { // alleen TOTP
-          addTotp(p.issuer || p.name, p.name, base32Encode(p.secret),
-                  ALGO_NAMES[p.algo] || "SHA1", p.digits, 30);
+        if (p.type === 2 && p.secret) {
+          addTotp(p.issuer || p.name, p.name, base32Encode(p.secret), ALGO_NAMES[p.algo] || "SHA1", p.digits, 30);
           added++;
         }
       } else { i = skipField(bytes, i, wire); }
@@ -239,7 +417,6 @@
     return added;
   }
 
-  // ---------- otpauth:// (enkele code) ----------
   function parseOtpAuth(text) {
     var url = new URL(text);
     if (url.protocol !== "otpauth:") { throw new Error("geen otpauth:// URI"); }
@@ -253,171 +430,147 @@
     var digits = parseInt(params.get("digits") || "6", 10);
     var period = parseInt(params.get("period") || "30", 10);
     var account = label;
-    if (label.indexOf(":") !== -1) {
-      var parts = label.split(":");
-      if (!issuer) { issuer = parts[0]; }
-      account = parts.slice(1).join(":");
-    }
+    if (label.indexOf(":") !== -1) { var parts = label.split(":"); if (!issuer) { issuer = parts[0]; } account = parts.slice(1).join(":"); }
     if (!issuer) { issuer = label; }
     addTotp(issuer, account, secret, algo, digits, period);
   }
 
-  // ---------- Kaart-toevoegers ----------
+  // ---------- toevoegers ----------
   function nextColor() { var c = COLORS[colorCursor % COLORS.length]; colorCursor++; return c; }
-
-  function isDuplicate(type, data) {
-    return cards.some(function (c) { return c.type === type && c.data === data; });
-  }
+  function isDuplicate(type, data) { return cards.some(function (c) { return c.type === type && c.data === data; }); }
 
   function addTotp(issuer, account, secret, algo, digits, period) {
     if (isDuplicate("totp", secret)) { return false; }
-    cards.push({
-      type: "totp", name: issuer || "2FA", sub: account || "", color: "dkgray",
-      icon: "lock", data: secret, extra: algo + ":" + digits + ":" + period, category: "2FA"
-    });
-    render();
-    return true;
+    cards.push({ type: "totp", name: issuer || "2FA", sub: account || "", color: "dkgray", icon: "lock", data: secret, extra: algo + ":" + digits + ":" + period, category: "2FA" });
+    render(); return true;
   }
-
   function addBarcode(name, number, fmt) {
     if (isDuplicate("barcode", number)) { return false; }
-    cards.push({
-      type: "barcode", name: name || "Kaart", sub: "", color: nextColor(),
-      icon: "card", data: number, extra: fmt, category: "Overig"
-    });
-    render();
-    return true;
+    cards.push({ type: "barcode", name: name || "Kaart", sub: "", color: nextColor(), icon: "card", data: number, extra: fmt, category: "Overig" });
+    render(); return true;
   }
-
   function addQr(name, data) {
     if (isDuplicate("qr", data)) { return false; }
-    // Ruwe schatting: het horloge ondersteunt QR-versies 1-10 byte-mode ~ tot ~230 tekens.
     if (data.length > 230) { setStatus("QR-tekst te lang (max ~230 tekens).", "err"); return false; }
-    cards.push({
-      type: "qr", name: name || "QR", sub: "", color: nextColor(),
-      icon: "ticket", data: data, extra: "QR", category: "Overig"
-    });
-    render();
-    return true;
+    cards.push({ type: "qr", name: name || "QR", sub: "", color: nextColor(), icon: "ticket", data: data, extra: "QR", category: "Overig" });
+    render(); return true;
   }
 
-  // ---------- ZXing scanner ----------
+  // ---------- ZXing ----------
   var reader = null;
-
   function barcodeFormatName(fmtEnum) {
     var BF = ZXing.BarcodeFormat;
     if (fmtEnum === BF.QR_CODE) { return "QR"; }
     if (fmtEnum === BF.EAN_13) { return "EAN13"; }
-    return "CODE128"; // CODE_128 en alle overige 1D vallen terug op CODE128
+    return "CODE128";
   }
-
   function handleResult(text, fmtEnum) {
     var BF = ZXing.BarcodeFormat;
     try {
       if (fmtEnum === BF.QR_CODE) {
-        if (/^otpauth-migration:\/\//i.test(text)) {
-          var n = parseMigration(text);
-          setStatus("✓ " + n + " 2FA-account(s) geïmporteerd", "ok");
-        } else if (/^otpauth:\/\//i.test(text)) {
-          parseOtpAuth(text);
-          setStatus("✓ 2FA-code toegevoegd", "ok");
-        } else {
-          // Vrije QR-inhoud (ticket, wifi, url) -> als QR-kaart; het horloge toont 'm.
-          var qadded = addQr("QR " + (cards.length + 1), text);
-          setStatus(qadded ? "✓ QR-code toegevoegd" : "Al toegevoegd of te lang", qadded ? "ok" : "info");
-        }
+        if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); setStatus(n + " 2FA-account(s) geïmporteerd", "ok"); }
+        else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); setStatus("2FA-code toegevoegd", "ok"); }
+        else { var q = addQr("QR " + (cards.length + 1), text); setStatus(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
       } else {
         var fmt = barcodeFormatName(fmtEnum);
         var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
-        setStatus(added ? ("✓ Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+        setStatus(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
       }
-    } catch (e) {
-      setStatus("Kon niet verwerken: " + e.message, "err");
-    }
+    } catch (e) { setStatus("Kon niet verwerken: " + e.message, "err"); }
   }
 
   function startScan() {
-    if (typeof ZXing === "undefined") { setStatus("Scanner-bibliotheek niet geladen (internet nodig).", "err"); return; }
+    if (typeof ZXing === "undefined") { setStatus("Scanner niet geladen (internet nodig).", "err"); return; }
     reader = new ZXing.BrowserMultiFormatReader();
-    setStatus("Camera starten…", "info");
-    reader.decodeFromVideoDevice(null, els.video, function (result, err) {
+    setStatus("Camera starten...", "info");
+    reader.decodeFromVideoDevice(null, els.video, function (result) {
       if (result) { handleResult(result.getText(), result.getBarcodeFormat()); }
     }).then(function () {
-      setStatus("Richt op een QR of barcode…", "info");
+      setStatus("Richt op een QR of barcode...", "info");
+      els.video.classList.remove("hidden");
       els.startBtn.classList.add("hidden");
       els.stopBtn.classList.remove("hidden");
-    }).catch(function (e) {
-      setStatus("Kon camera niet openen: " + e.message, "err");
-    });
+    }).catch(function (e) { setStatus("Kon camera niet openen: " + e.message, "err"); });
   }
-
   function stopScan() {
     if (reader) { reader.reset(); reader = null; }
+    els.video.classList.add("hidden");
     els.startBtn.classList.remove("hidden");
     els.stopBtn.classList.add("hidden");
     setStatus("Camera uit.", "info");
   }
 
-  // ---------- Render kaartenlijst + output ----------
-  function escapePipe(s) { return String(s).replace(/\|/g, "\\|"); }
-
-  function cardLine(c) {
-    return [c.type, escapePipe(c.name), escapePipe(c.sub), c.color, c.icon,
-            escapePipe(c.data), c.extra, c.category].join("|");
+  // ---------- Afbeelding-upload ----------
+  function decodeImageFile(file) {
+    if (!file || !/^image\//.test(file.type)) { setStatus("Geen geldige afbeelding.", "err"); return; }
+    setStatus("Afbeelding scannen...", "info");
+    var url = URL.createObjectURL(file);
+    var r = new ZXing.BrowserMultiFormatReader();
+    r.decodeFromImageUrl(url).then(function (result) {
+      handleResult(result.getText(), result.getBarcodeFormat());
+      URL.revokeObjectURL(url);
+    }).catch(function () {
+      setStatus("Geen QR of barcode gevonden in de afbeelding.", "err");
+      URL.revokeObjectURL(url);
+    });
   }
 
+  // ---------- render ----------
+  function escapePipe(s) { return String(s).replace(/\|/g, "\\|"); }
+  function cardLine(c) {
+    return [c.type, escapePipe(c.name), escapePipe(c.sub), c.color, c.icon, escapePipe(c.data), c.extra, c.category].join("|");
+  }
+  function typeLabel(t) { return t === "totp" ? "2FA" : (t === "qr" ? "QR" : "PAS"); }
+
   function render() {
-    els.cardCount.textContent = "(" + cards.length + ")";
+    els.cardCount.textContent = cards.length;
     els.emptyHint.style.display = cards.length ? "none" : "block";
     els.cardList.innerHTML = "";
 
     cards.forEach(function (c, idx) {
       var row = document.createElement("div");
-      row.className = "card-item";
+      row.className = "card-row";
 
-      var sw = document.createElement("div");
-      sw.className = "swatch";
-      sw.style.background = COLOR_HEX[c.color] || "#888";
-      row.appendChild(sw);
+      var chip = document.createElement("div");
+      chip.className = "chip";
+      chip.style.background = "linear-gradient(135deg," + (COLOR_HEX[c.color] || "#888") + ", rgba(0,0,0,0.35))";
+      row.appendChild(chip);
 
       var meta = document.createElement("div");
-      meta.className = "meta";
+      meta.className = "card-meta";
       var nm = document.createElement("div");
-      nm.className = "name";
-      var ic = (c.type === "totp") ? "🔐 " : (c.type === "qr" ? "▦ " : "▊▎ ");
-      nm.textContent = ic + c.name;
+      nm.className = "card-name";
+      nm.innerHTML = '<span>' + escapeHtml(c.name) + '</span><span class="type-tag">' + typeLabel(c.type) + '</span>';
       var ds = document.createElement("div");
-      ds.className = "desc";
+      ds.className = "card-desc";
       var detail = (c.type === "totp") ? c.extra : (c.type === "qr" ? c.data : c.extra + " · " + c.data);
       ds.textContent = (c.sub ? c.sub + " · " : "") + detail;
       meta.appendChild(nm); meta.appendChild(ds);
       row.appendChild(meta);
 
       var sel = document.createElement("select");
+      sel.className = "color-sel";
       ALL_COLORS.forEach(function (col) {
-        var o = document.createElement("option");
-        o.value = col; o.textContent = col;
-        if (col === c.color) { o.selected = true; }
-        sel.appendChild(o);
+        var o = document.createElement("option"); o.value = col; o.textContent = col;
+        if (col === c.color) { o.selected = true; } sel.appendChild(o);
       });
-      sel.addEventListener("change", function () { c.color = sel.value; sw.style.background = COLOR_HEX[c.color]; buildOutput(); });
+      sel.addEventListener("change", function () { c.color = sel.value; chip.style.background = "linear-gradient(135deg," + COLOR_HEX[c.color] + ", rgba(0,0,0,0.35))"; buildOutput(); });
       row.appendChild(sel);
 
       var del = document.createElement("button");
-      del.className = "danger";
-      del.textContent = "✕";
+      del.className = "icon-btn"; del.title = "Verwijderen"; del.innerHTML = ICON.trash;
       del.addEventListener("click", function () { cards.splice(idx, 1); render(); });
       row.appendChild(del);
 
       els.cardList.appendChild(row);
     });
-
     buildOutput();
   }
 
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (m) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" })[m]; }); }
+
   function buildOutput() {
     var lines = cards.map(cardLine);
-    // Verdeel over chunks van max CHUNK_SIZE tekens (hele regels bij elkaar).
     var chunks = [""];
     lines.forEach(function (line) {
       var last = chunks[chunks.length - 1];
@@ -425,36 +578,33 @@
       if (candidate.length > CHUNK_SIZE && last.length) { chunks.push(line); }
       else { chunks[chunks.length - 1] = candidate; }
     });
-
     els.outputs.innerHTML = "";
     chunks.forEach(function (chunk, i) {
+      var block = document.createElement("div"); block.className = "output-block";
       if (chunks.length > 1 || i === 0) {
-        var lbl = document.createElement("label");
-        lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
-        els.outputs.appendChild(lbl);
+        var lbl = document.createElement("label"); lbl.style.marginTop = "0"; lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
+        block.appendChild(lbl);
       }
-      var ta = document.createElement("textarea");
-      ta.readOnly = true;
-      ta.value = chunk;
-      ta.dataset.chunk = i;
-      els.outputs.appendChild(ta);
+      var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = chunk;
+      block.appendChild(ta); els.outputs.appendChild(block);
     });
   }
 
-  // ---------- Restore ----------
+  // ---------- restore ----------
+  function splitEscaped(text, sep) {
+    var ph = ""; var protectedText = text.split("\\" + sep).join(ph);
+    return protectedText.split(sep).map(function (p) { return p.split(ph).join(sep).trim(); });
+  }
   function restore(text) {
-    var lines = text.split("\n");
-    var n = 0;
+    var lines = text.split("\n"); var n = 0;
     lines.forEach(function (raw) {
-      var line = raw.trim();
-      if (!line) { return; }
-      var f = splitEscaped(line, "|");
-      if (f.length < 6) { return; }
+      var line = raw.trim(); if (!line) { return; }
+      var f = splitEscaped(line, "|"); if (f.length < 6) { return; }
       var type = f[0].toLowerCase();
       var card = {
         type: type, name: f[1], sub: f[2], color: f[3] || (type === "totp" ? "dkgray" : "blue"),
         icon: f[4] || (type === "totp" ? "lock" : "card"), data: f[5],
-        extra: f[6] || (type === "totp" ? "SHA1:6:30" : "CODE128"),
+        extra: f[6] || (type === "totp" ? "SHA1:6:30" : (type === "qr" ? "QR" : "CODE128")),
         category: f[7] || (type === "totp" ? "2FA" : "Overig")
       };
       if (!isDuplicate(card.type, card.data)) { cards.push(card); n++; }
@@ -463,69 +613,59 @@
     setStatus(n + " kaart(en) ingeladen", n ? "ok" : "err");
   }
 
-  function splitEscaped(text, sep) {
-    var ph = "";
-    var protectedText = text.split("\\" + sep).join(ph);
-    return protectedText.split(sep).map(function (p) { return p.split(ph).join(sep).trim(); });
-  }
-
-  // ---------- Events ----------
+  // ---------- events ----------
   els.startBtn.addEventListener("click", startScan);
   els.stopBtn.addEventListener("click", stopScan);
-  els.copyBtn.addEventListener("click", function () {
-    var all = cards.map(cardLine).join("\n");
-    navigator.clipboard.writeText(all).then(function () {
-      els.copyStatus.textContent = "Alle kaarten gekopieerd. (Als je >1 blok hebt: kopieer elk veld apart.)";
-    }, function () {
-      els.copyStatus.textContent = "Kon niet kopiëren — selecteer de tekst handmatig.";
-    });
-  });
+
+  els.dropzone.addEventListener("click", function () { els.fileInput.click(); });
+  els.fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
+  ["dragenter","dragover"].forEach(function (ev) { els.dropzone.addEventListener(ev, function (e) { e.preventDefault(); els.dropzone.classList.add("drag"); }); });
+  ["dragleave","drop"].forEach(function (ev) { els.dropzone.addEventListener(ev, function (e) { e.preventDefault(); els.dropzone.classList.remove("drag"); }); });
+  els.dropzone.addEventListener("drop", function (e) { if (e.dataTransfer.files[0]) { decodeImageFile(e.dataTransfer.files[0]); } });
+
   els.manualOtpBtn.addEventListener("click", function () {
-    var t = els.manualOtp.value.trim();
-    if (!t) { return; }
+    var t = els.manualOtp.value.trim(); if (!t) { return; }
     try {
-      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); setStatus("✓ " + n + " account(s)", "ok"); }
-      else { parseOtpAuth(t); setStatus("✓ Toegevoegd", "ok"); }
+      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); setStatus(n + " account(s) toegevoegd", "ok"); }
+      else { parseOtpAuth(t); setStatus("Toegevoegd", "ok"); }
       els.manualOtp.value = "";
     } catch (e) { setStatus("Fout: " + e.message, "err"); }
   });
   els.manualBcBtn.addEventListener("click", function () {
-    var num = els.bcNum.value.trim();
-    if (!num) { return; }
+    var num = els.bcNum.value.trim(); if (!num) { return; }
     var fmt = /^\d{13}$/.test(num) ? "EAN13" : "CODE128";
     addBarcode(els.bcName.value.trim() || "Kaart", num, fmt);
-    els.bcNum.value = ""; els.bcName.value = "";
-    setStatus("✓ Barcode toegevoegd", "ok");
+    els.bcNum.value = ""; els.bcName.value = ""; setStatus("Barcode toegevoegd", "ok");
   });
   document.getElementById("manualQrBtn").addEventListener("click", function () {
-    var d = document.getElementById("qrData").value.trim();
-    if (!d) { return; }
+    var d = document.getElementById("qrData").value.trim(); if (!d) { return; }
     if (addQr(document.getElementById("qrName").value.trim() || "QR", d)) {
-      document.getElementById("qrData").value = ""; document.getElementById("qrName").value = "";
-      setStatus("✓ QR toegevoegd", "ok");
+      document.getElementById("qrData").value = ""; document.getElementById("qrName").value = ""; setStatus("QR toegevoegd", "ok");
     }
   });
   els.restoreBtn.addEventListener("click", function () {
-    var t = els.restoreIn.value.trim();
-    if (t) { restore(t); els.restoreIn.value = ""; }
+    var t = els.restoreIn.value.trim(); if (t) { restore(t); els.restoreIn.value = ""; }
   });
 
-  var pairCode = document.getElementById("pairCode");
-  var sendBtn = document.getElementById("sendBtn");
   var sendStatus = document.getElementById("sendStatus");
-  sendBtn.addEventListener("click", function () {
-    var code = (pairCode.value || "").trim().toUpperCase();
-    if (!/^[A-Z0-9]{4,8}$/.test(code)) { sendStatus.textContent = "Vul een geldige koppelcode in."; return; }
-    if (cards.length === 0) { sendStatus.textContent = "Nog geen kaarten om te sturen."; return; }
-    var body = JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") });
-    sendStatus.textContent = "Versturen…";
-    fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
+  function setSend(msg, kind) { sendStatus.className = "status " + (kind || "info"); sendStatus.innerHTML = (ICON[kind] || ICON.info) + "<span>" + msg + "</span>"; }
+  document.getElementById("sendBtn").addEventListener("click", function () {
+    var code = (document.getElementById("pairCode").value || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) { setSend("Vul een geldige koppelcode in.", "err"); return; }
+    if (cards.length === 0) { setSend("Nog geen kaarten om te sturen.", "err"); return; }
+    setSend("Versturen...", "info");
+    fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") }) })
       .then(function (r) { return r.json(); })
-      .then(function (j) {
-        if (j.ok) { sendStatus.textContent = "✓ " + j.count + " kaart(en) verstuurd. Druk nu op je horloge op Ophalen."; }
-        else { sendStatus.textContent = "Fout: " + (j.error || "onbekend"); }
-      })
-      .catch(function (e) { sendStatus.textContent = "Kon niet versturen: " + e.message; });
+      .then(function (j) { if (j.ok) { setSend(j.count + " kaart(en) verstuurd. Tik nu op je horloge op Ophalen.", "ok"); } else { setSend("Fout: " + (j.error || "onbekend"), "err"); } })
+      .catch(function (e) { setSend("Kon niet versturen: " + e.message, "err"); });
+  });
+
+  els.copyBtn.addEventListener("click", function () {
+    var all = cards.map(cardLine).join("\n");
+    navigator.clipboard.writeText(all).then(
+      function () { els.copyStatus.className = "status ok"; els.copyStatus.innerHTML = ICON.ok + "<span>Gekopieerd. Bij meerdere blokken: kopieer elk veld apart.</span>"; },
+      function () { els.copyStatus.className = "status err"; els.copyStatus.innerHTML = ICON.err + "<span>Kon niet kopiëren — selecteer handmatig.</span>"; }
+    );
   });
 
   render();
