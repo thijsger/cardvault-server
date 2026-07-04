@@ -141,8 +141,22 @@
   }
   .card-meta { flex: 1; min-width: 0; }
   .card-name { font-size: 0.94rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; }
-  .card-name .type-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; color: var(--faint); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 5px; }
-  .card-desc { font-size: 0.76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .card-name .type-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; color: var(--faint); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 5px; flex: 0 0 auto; }
+  .card-desc { font-size: 0.72rem; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+  input.name-edit {
+    width: auto; flex: 1; min-width: 0;
+    background: transparent; border: none; border-bottom: 1px solid transparent;
+    padding: 2px 0; font-size: 0.94rem; font-weight: 600; color: var(--text);
+    border-radius: 0;
+  }
+  input.name-edit:hover { border-bottom-color: var(--line2); }
+  input.name-edit:focus { outline: none; border-bottom-color: var(--accent); }
+  input.sub-edit {
+    width: 100%; background: transparent; border: none; border-bottom: 1px solid transparent;
+    padding: 2px 0; margin-top: 2px; font-size: 0.78rem; color: var(--muted); border-radius: 0;
+  }
+  input.sub-edit:hover { border-bottom-color: var(--line2); }
+  input.sub-edit:focus { outline: none; border-bottom-color: var(--accent); color: var(--text); }
   select.color-sel { width: auto; padding: 6px 8px; font-size: 0.76rem; }
   .icon-btn { background: transparent; border: none; color: var(--faint); padding: 6px; cursor: pointer; border-radius: 8px; }
   .icon-btn:hover { color: var(--err); background: rgba(255,107,107,0.08); }
@@ -538,14 +552,31 @@
 
       var meta = document.createElement("div");
       meta.className = "card-meta";
-      var nm = document.createElement("div");
-      nm.className = "card-name";
-      nm.innerHTML = '<span>' + escapeHtml(c.name) + '</span><span class="type-tag">' + typeLabel(c.type) + '</span>';
+
+      // Naam bewerkbaar via een inline invoerveld.
+      var nameWrap = document.createElement("div");
+      nameWrap.className = "card-name";
+      var nameInput = document.createElement("input");
+      nameInput.className = "name-edit";
+      nameInput.value = c.name;
+      nameInput.placeholder = "Naam";
+      nameInput.addEventListener("input", function () { c.name = nameInput.value; buildOutput(); });
+      var tag = document.createElement("span");
+      tag.className = "type-tag"; tag.textContent = typeLabel(c.type);
+      nameWrap.appendChild(nameInput); nameWrap.appendChild(tag);
+
+      // Subtekst bewerkbaar (bij barcode/qr; bij totp is dit het account).
+      var subInput = document.createElement("input");
+      subInput.className = "sub-edit";
+      subInput.value = c.sub || "";
+      subInput.placeholder = "Subtekst (optioneel)";
+      subInput.addEventListener("input", function () { c.sub = subInput.value; buildOutput(); });
+
       var ds = document.createElement("div");
       ds.className = "card-desc";
-      var detail = (c.type === "totp") ? c.extra : (c.type === "qr" ? c.data : c.extra + " · " + c.data);
-      ds.textContent = (c.sub ? c.sub + " · " : "") + detail;
-      meta.appendChild(nm); meta.appendChild(ds);
+      ds.textContent = (c.type === "totp") ? c.extra : (c.type === "qr" ? c.data : c.extra + " · " + c.data);
+
+      meta.appendChild(nameWrap); meta.appendChild(subInput); meta.appendChild(ds);
       row.appendChild(meta);
 
       var sel = document.createElement("select");
