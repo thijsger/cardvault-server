@@ -772,7 +772,10 @@
       });
       var del = document.createElement("button");
       del.className = "del"; del.title = "Verwijderen"; del.innerHTML = ICON.trash;
-      del.addEventListener("click", function () { cards.splice(idx, 1); render(); });
+      del.addEventListener("click", function () {
+        var pos = cards.indexOf(c);   // verwijder exact deze kaart, niet op index
+        if (pos !== -1) { cards.splice(pos, 1); render(); }
+      });
       tools.appendChild(del);
       wrap.appendChild(tools);
 
