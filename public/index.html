@@ -631,18 +631,59 @@
   // ---------- upload ----------
   var dropzone = document.getElementById("dropzone");
   var fileInput = document.getElementById("fileInput");
+  function makeReader() {
+    // TRY_HARDER: scant grondiger, ook als de code klein/schuin op de foto staat.
+    var hints = null;
+    try {
+      hints = new Map();
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    } catch (e) { hints = null; }
+    return new ZXing.BrowserMultiFormatReader(hints);
+  }
+
   function decodeImageFile(file) {
     if (!file || !/^image\//.test(file.type)) { toast("Geen geldige afbeelding", "err"); return; }
     toast("Afbeelding scannen...", "info");
     var url = URL.createObjectURL(file);
-    var r = new ZXing.BrowserMultiFormatReader();
-    r.decodeFromImageUrl(url).then(function (result) {
-      handleResult(result.getText(), result.getBarcodeFormat());
+    var img = new Image();
+    img.onload = function () {
+      // Teken op een canvas (grote foto's schalen we terug voor snelheid/betrouwbaarheid).
+      var maxDim = 1800;
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-    }).catch(function () {
-      toast("Geen QR of barcode gevonden in de afbeelding", "err");
-      URL.revokeObjectURL(url);
-    });
+
+      var r = makeReader();
+      // Eerst het hele plaatje; lukt dat niet, probeer een ingezoomd middenstuk
+      // (helpt als de code klein in het midden van een foto staat).
+      if (tryCanvas(r, canvas)) { return; }
+      var crop = centerCrop(canvas, 0.6);
+      if (tryCanvas(r, crop)) { return; }
+      toast("Geen QR of barcode gevonden. Probeer een scherpere of grotere foto.", "err");
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); toast("Kon de afbeelding niet laden", "err"); };
+    img.src = url;
+  }
+
+  function tryCanvas(reader, canvas) {
+    try {
+      var result = reader.decodeFromCanvas(canvas);
+      if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return true; }
+    } catch (e) { /* NotFoundException -> volgende poging */ }
+    return false;
+  }
+
+  function centerCrop(canvas, frac) {
+    var cw = Math.round(canvas.width * frac);
+    var ch = Math.round(canvas.height * frac);
+    var out = document.createElement("canvas");
+    out.width = canvas.width; out.height = canvas.height;
+    var ctx = out.getContext("2d");
+    ctx.drawImage(canvas, (canvas.width - cw) / 2, (canvas.height - ch) / 2, cw, ch, 0, 0, canvas.width, canvas.height);
+    return out;
   }
   dropzone.addEventListener("click", function () { fileInput.click(); });
   fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
