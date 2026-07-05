@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <style>
   :root {
     --bg: #07090d;
@@ -639,22 +640,50 @@
   function decodeImageFile(file) {
     if (!file || !/^image\//.test(file.type)) { toast("Geen geldige afbeelding", "err"); return; }
     toast("Afbeelding scannen...", "info");
-    var url = URL.createObjectURL(file);
+    var fileUrl = URL.createObjectURL(file);
     var img = new Image();
     img.onload = function () {
-      URL.revokeObjectURL(url);
-      // 1) QR-codes: jsQR op de pixeldata (heel betrouwbaar voor screenshots/foto's).
-      //    Meerdere schalen proberen zodat zowel grote foto's als kleine QR's werken.
+      // 1) QR-codes: jsQR op de pixeldata (betrouwbaar voor screenshots/foto's).
       var scales = [1400, 800, 2000];
       for (var s = 0; s < scales.length; s++) {
         var text = tryJsQR(img, scales[s]);
-        if (text) { handleQrText(text); return; }
+        if (text) { URL.revokeObjectURL(fileUrl); handleQrText(text); return; }
       }
-      // 2) Barcodes: ZXing als terugval.
-      tryZxingBarcode(img);
+      // 2) Barcodes: Quagga2 (speciaal voor 1D-barcodes uit foto's).
+      tryQuagga(fileUrl, function (ok) {
+        URL.revokeObjectURL(fileUrl);
+        if (!ok) { toast("Geen QR of barcode gevonden. Maak een rechte, scherpe foto van dichtbij.", "err"); }
+      });
     };
-    img.onerror = function () { URL.revokeObjectURL(url); toast("Kon de afbeelding niet laden", "err"); };
-    img.src = url;
+    img.onerror = function () { URL.revokeObjectURL(fileUrl); toast("Kon de afbeelding niet laden", "err"); };
+    img.src = fileUrl;
+  }
+
+  // Quagga2 leest 1D-barcodes uit een afbeelding-URL. Callback(true) bij succes.
+  function tryQuagga(src, done) {
+    if (typeof Quagga === "undefined") { done(false); return; }
+    Quagga.decodeSingle({
+      src: src,
+      numOfWorkers: 0,
+      locate: true,
+      inputStream: { size: 1600 },
+      decoder: {
+        readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader",
+                  "code_128_reader", "code_39_reader", "i2of5_reader", "codabar_reader"]
+      }
+    }, function (result) {
+      if (result && result.codeResult && result.codeResult.code) {
+        var code = result.codeResult.code;
+        // Formaat op basis van de code: 13 cijfers -> EAN13, anders CODE128
+        // (het horloge ondersteunt die twee; CODE128 dekt al het overige).
+        var fmt = /^\d{13}$/.test(code) ? "EAN13" : "CODE128";
+        var added = addBarcode("Kaart " + (cards.length + 1), code, fmt);
+        toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+        done(true);
+      } else {
+        done(false);
+      }
+    });
   }
 
   function drawToCanvas(img, maxDim) {
@@ -678,46 +707,6 @@
     } catch (e) { return null; }
   }
 
-  function makeBarcodeReader() {
-    // TRY_HARDER + alle 1D-formaten expliciet: veel betrouwbaarder op foto's.
-    var hints = new Map();
-    try {
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      var BF = ZXing.BarcodeFormat;
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        BF.EAN_13, BF.EAN_8, BF.UPC_A, BF.UPC_E, BF.CODE_128, BF.CODE_39, BF.ITF, BF.CODABAR, BF.QR_CODE
-      ]);
-    } catch (e) { /* oudere ZXing: zonder hints */ }
-    return new ZXing.BrowserMultiFormatReader(hints);
-  }
-
-  function rotateCanvas90(canvas) {
-    var out = document.createElement("canvas");
-    out.width = canvas.height; out.height = canvas.width;
-    var ctx = out.getContext("2d");
-    ctx.translate(out.width / 2, out.height / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-    return out;
-  }
-
-  function tryZxingBarcode(img) {
-    var reader = makeBarcodeReader();
-    // Meerdere schalen; barcodes hebben vaak een grotere resolutie nodig.
-    var sizes = [1600, 1000, 2200];
-    for (var s = 0; s < sizes.length; s++) {
-      var canvas = drawToCanvas(img, sizes[s]);
-      // normaal + 90 graden gedraaid (barcode staat vaak verticaal op de foto)
-      var variants = [canvas, rotateCanvas90(canvas)];
-      for (var vv = 0; vv < variants.length; vv++) {
-        try {
-          var result = reader.decodeFromCanvas(variants[vv]);
-          if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return; }
-        } catch (e) { /* volgende poging */ }
-      }
-    }
-    toast("Geen QR of barcode gevonden. Probeer een scherpere, rechtere foto van dichtbij.", "err");
-  }
   dropzone.addEventListener("click", function () { fileInput.click(); });
   fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
   ["dragenter","dragover"].forEach(function (ev) { dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.add("drag"); }); });
