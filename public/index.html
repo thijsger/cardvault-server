@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -296,15 +296,15 @@
       </span>
       <span class="logo-name">Card<em>Vault</em></span>
     </div>
-    <div class="tagline">Klantenkaarten, tickets en 2FA-codes — altijd op je pols.</div>
+    <div class="tagline">Loyalty cards, tickets and 2FA codes — always on your wrist.</div>
     <div class="badges">
       <span class="badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Verwerkt in je browser
+        Processed in your browser
       </span>
       <span class="badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        Geen account nodig
+        No account needed
       </span>
     </div>
   </header>
@@ -314,56 +314,56 @@
     <div class="sec-head">
       <div class="sec-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
-        Kaart toevoegen
+        Add a card
       </div>
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="scan">Scannen</button>
-      <button class="tab" data-tab="upload">Uploaden</button>
-      <button class="tab" data-tab="manual">Handmatig</button>
+      <button class="tab active" data-tab="scan">Scan</button>
+      <button class="tab" data-tab="upload">Upload</button>
+      <button class="tab" data-tab="manual">Manual</button>
     </div>
 
     <div class="tabpane active" id="pane-scan">
-      <p class="hint">Richt de camera op een 2FA-QR, een Google Authenticator export-QR (alle accounts in een keer) of een barcode. Het type wordt automatisch herkend.</p>
+      <p class="hint">Point the camera at a 2FA QR, a Google Authenticator export QR (all accounts at once) or a barcode. The type is detected automatically.</p>
       <video id="video" class="hidden" playsinline muted></video>
       <div class="row">
         <button id="startBtn" class="btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Camera starten
+          Start camera
         </button>
-        <button id="stopBtn" class="btn-ghost hidden">Stoppen</button>
+        <button id="stopBtn" class="btn-ghost hidden">Stop</button>
       </div>
     </div>
 
     <div class="tabpane" id="pane-upload">
-      <p class="hint">Heb je een screenshot of foto van een QR- of barcode? Sleep hem hierheen.</p>
+      <p class="hint">Have a screenshot or photo of a QR or barcode? Drop it here.</p>
       <div id="dropzone" class="dropzone">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-        Sleep een afbeelding hierheen of <b>klik om te kiezen</b>
-        <div class="dz-sub">QR-codes en barcodes worden automatisch gelezen</div>
+        Drag an image here or <b>click to choose</b>
+        <div class="dz-sub">QR codes and barcodes are read automatically</div>
       </div>
       <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
 
     <div class="tabpane" id="pane-manual">
-      <label>2FA-code (otpauth:// of otpauth-migration:// tekst)</label>
+      <label>2FA code (otpauth:// or otpauth-migration:// text)</label>
       <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
-      <button id="manualOtpBtn" class="btn-ghost mt8">Verwerken</button>
+      <button id="manualOtpBtn" class="btn-ghost mt8">Process</button>
 
       <label>Barcode</label>
       <div class="grid2">
         <input id="bcNum" placeholder="Nummer">
         <input id="bcName" placeholder="Naam">
       </div>
-      <button id="manualBcBtn" class="btn-ghost mt8">Toevoegen</button>
+      <button id="manualBcBtn" class="btn-ghost mt8">Add</button>
 
-      <label>QR-code (ticket, wifi, link)</label>
+      <label>QR code (ticket, wifi, link)</label>
       <div class="grid2">
         <input id="qrData" placeholder="URL of tekst">
         <input id="qrName" placeholder="Naam">
       </div>
-      <button id="manualQrBtn" class="btn-ghost mt8">Toevoegen</button>
+      <button id="manualQrBtn" class="btn-ghost mt8">Add</button>
     </div>
   </section>
 
@@ -372,12 +372,12 @@
     <div class="sec-head">
       <div class="sec-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
-        Jouw wallet
+        Your wallet
       </div>
-      <span class="count-pill" id="cardCount">0 kaarten</span>
+      <span class="count-pill" id="cardCount">0 cards</span>
     </div>
     <div id="wallet" class="wallet"></div>
-    <div id="emptyHint" class="empty">Nog leeg — scan, upload of voeg iets toe hierboven.<br>Klik op een kaartnaam om hem te wijzigen.</div>
+    <div id="emptyHint" class="empty">Empty — scan, upload or add something above.<br>Click a card name to edit it.</div>
   </section>
 
   <!-- ============ VERSTUREN ============ -->
@@ -385,19 +385,19 @@
     <div class="sec-head" style="justify-content:center">
       <div class="sec-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="10" rx="2"/><path d="M9 7V4h6v3M9 17v3h6v-3"/></svg></span>
-        Naar je horloge
+        To your watch
       </div>
     </div>
     <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-txt">Open CardVault op je horloge en swipe naar de <b>Sync-tegel</b></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-txt">Typ de <b>koppelcode</b> van de tegel hieronder in en verstuur</div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-txt">Tik op je horloge op de tegel om <b>op te halen</b></div></div>
+      <div class="step"><div class="step-num">1</div><div class="step-txt">Open CardVault on your watch and swipe to the <b>Sync tile</b></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-txt">Enter the <b>pairing code</b> from the tile below and send</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-txt">Tap the tile on your watch to <b>fetch</b></div></div>
     </div>
     <div class="pair-row">
-      <input id="pairCode" class="pair" placeholder="Koppelcode" maxlength="8" autocomplete="off">
+      <input id="pairCode" class="pair" placeholder="Pairing code" maxlength="8" autocomplete="off">
       <button id="sendBtn" class="btn-primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
-        Versturen
+        Send
       </button>
     </div>
   </section>
@@ -406,30 +406,30 @@
   <details>
     <summary>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      Handmatig plakken in Garmin Connect
+      Paste manually into Garmin Connect
       <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
     </summary>
     <div class="details-body">
-      <p class="hint">Zonder sync: kopieer dit blok en plak het in het veld Kaarten (1/4) van CardVault in de Garmin Connect-app. Bij veel kaarten verschijnen blokken 2/4, 3/4 vanzelf.</p>
+      <p class="hint">Without sync: copy this block and paste it into the Cards (1/4) field of CardVault in the Garmin Connect app. With many cards, blocks 2/4, 3/4 appear automatically.</p>
       <div id="outputs"></div>
-      <button id="copyBtn" class="btn-ghost btn-wide">Kopieren</button>
+      <button id="copyBtn" class="btn-ghost btn-wide">Copy</button>
     </div>
   </details>
 
   <details>
     <summary>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-      Back-up en herstellen
+      Backup and restore
       <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
     </summary>
     <div class="details-body">
-      <p class="hint">Bewaar het blok hierboven als back-up. Plak het hier om je kaarten terug te laden en verder te bewerken.</p>
+      <p class="hint">Save the block above as a backup. Paste it here to reload your cards and keep editing.</p>
       <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
-      <button id="restoreBtn" class="btn-ghost mt8">Inladen</button>
+      <button id="restoreBtn" class="btn-ghost mt8">Load</button>
     </div>
   </details>
 
-  <footer>CardVault verwerkt alles lokaal in je browser. Kaartdata voor sync wordt maximaal 30 minuten bewaard en daarna gewist.</footer>
+  <footer>CardVault processes everything locally in your browser. Card data for sync is kept for at most 30 minutes, then deleted.</footer>
 </div>
 
 <div id="toast"><span id="toast-ico"></span><span id="toast-msg"></span></div>
@@ -573,12 +573,12 @@
   }
   function addBarcode(name, number, fmt) {
     if (isDuplicate("barcode", number)) { return false; }
-    cards.push({ type: "barcode", name: name || "Kaart", sub: "", color: nextColor(), icon: "card", data: number, extra: fmt, category: "Overig" });
+    cards.push({ type: "barcode", name: name || "Card", sub: "", color: nextColor(), icon: "card", data: number, extra: fmt, category: "Overig" });
     render(); return true;
   }
   function addQr(name, data) {
     if (isDuplicate("qr", data)) { return false; }
-    if (data.length > 230) { toast("QR-tekst te lang (max ~230 tekens)", "err"); return false; }
+    if (data.length > 230) { toast("QR text too long (max ~230 chars)", "err"); return false; }
     cards.push({ type: "qr", name: name || "QR", sub: "", color: nextColor(), icon: "ticket", data: data, extra: "QR", category: "Overig" });
     render(); return true;
   }
@@ -598,10 +598,10 @@
   // Inhoud van een QR-code verwerken (2FA / migration / vrije QR).
   function handleQrText(text) {
     try {
-      if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); toast(n + " 2FA-account(s) geimporteerd", "ok"); }
-      else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); toast("2FA-code toegevoegd", "ok"); }
-      else { var q = addQr("QR " + (cards.length + 1), text); toast(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
-    } catch (e) { toast("Kon niet verwerken: " + e.message, "err"); }
+      if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); toast(n + " 2FA account(s) imported", "ok"); }
+      else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); toast("2FA code added", "ok"); }
+      else { var q = addQr("QR " + (cards.length + 1), text); toast(q ? "QR code added" : "Already added or too long", q ? "ok" : "info"); }
+    } catch (e) { toast("Could not process: " + e.message, "err"); }
   }
   function handleResult(text, fmtEnum) {
     var BF = ZXing.BarcodeFormat;
@@ -609,12 +609,12 @@
       handleQrText(text);
     } else {
       var fmt = barcodeFormatName(fmtEnum);
-      var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
-      toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+      var added = addBarcode("Card " + (cards.length + 1), text, fmt);
+      toast(added ? ("Barcode added (" + fmt + ")") : "Already added", added ? "ok" : "info");
     }
   }
   function startScan() {
-    if (typeof ZXing === "undefined") { toast("Scanner niet geladen (internet nodig)", "err"); return; }
+    if (typeof ZXing === "undefined") { toast("Scanner not loaded (internet needed)", "err"); return; }
     reader = new ZXing.BrowserMultiFormatReader();
     reader.decodeFromVideoDevice(null, video, function (result) {
       if (result) { handleResult(result.getText(), result.getBarcodeFormat()); }
@@ -622,8 +622,8 @@
       video.classList.remove("hidden");
       startBtn.classList.add("hidden");
       stopBtn.classList.remove("hidden");
-      toast("Richt op een QR of barcode", "info");
-    }).catch(function (e) { toast("Kon camera niet openen: " + e.message, "err"); });
+      toast("Point at a QR or barcode", "info");
+    }).catch(function (e) { toast("Could not open camera: " + e.message, "err"); });
   }
   function stopScan() {
     if (reader) { reader.reset(); reader = null; }
@@ -638,8 +638,8 @@
   var dropzone = document.getElementById("dropzone");
   var fileInput = document.getElementById("fileInput");
   function decodeImageFile(file) {
-    if (!file || !/^image\//.test(file.type)) { toast("Geen geldige afbeelding", "err"); return; }
-    toast("Afbeelding scannen...", "info");
+    if (!file || !/^image\//.test(file.type)) { toast("Not a valid image", "err"); return; }
+    toast("Scanning image...", "info");
     var fileUrl = URL.createObjectURL(file);
     var img = new Image();
     img.onload = function () {
@@ -652,10 +652,10 @@
       // 2) Barcodes: Quagga2 (speciaal voor 1D-barcodes uit foto's).
       tryQuagga(fileUrl, function (ok) {
         URL.revokeObjectURL(fileUrl);
-        if (!ok) { toast("Geen QR of barcode gevonden. Maak een rechte, scherpe foto van dichtbij.", "err"); }
+        if (!ok) { toast("No QR or barcode found. Take a straight, sharp close-up photo.", "err"); }
       });
     };
-    img.onerror = function () { URL.revokeObjectURL(fileUrl); toast("Kon de afbeelding niet laden", "err"); };
+    img.onerror = function () { URL.revokeObjectURL(fileUrl); toast("Could not load the image", "err"); };
     img.src = fileUrl;
   }
 
@@ -677,8 +677,8 @@
         // Formaat op basis van de code: 13 cijfers -> EAN13, anders CODE128
         // (het horloge ondersteunt die twee; CODE128 dekt al het overige).
         var fmt = /^\d{13}$/.test(code) ? "EAN13" : "CODE128";
-        var added = addBarcode("Kaart " + (cards.length + 1), code, fmt);
-        toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+        var added = addBarcode("Card " + (cards.length + 1), code, fmt);
+        toast(added ? ("Barcode added (" + fmt + ")") : "Already added", added ? "ok" : "info");
         done(true);
       } else {
         done(false);
@@ -734,7 +734,7 @@
   }
 
   function render() {
-    countEl.textContent = cards.length + (cards.length === 1 ? " kaart" : " kaarten");
+    countEl.textContent = cards.length + (cards.length === 1 ? " card" : " cards");
     emptyEl.style.display = cards.length ? "none" : "block";
     walletEl.innerHTML = "";
 
@@ -761,13 +761,13 @@
       card.appendChild(spacer);
 
       var nameInput = document.createElement("input");
-      nameInput.className = "wname"; nameInput.value = c.name; nameInput.placeholder = "Naam";
+      nameInput.className = "wname"; nameInput.value = c.name; nameInput.placeholder = "Name";
       nameInput.style.color = txtColor;
       nameInput.addEventListener("input", function () { c.name = nameInput.value; buildOutput(); });
       card.appendChild(nameInput);
 
       var subInput = document.createElement("input");
-      subInput.className = "wsub"; subInput.value = c.sub || ""; subInput.placeholder = "Subtekst";
+      subInput.className = "wsub"; subInput.value = c.sub || ""; subInput.placeholder = "Subtitle";
       subInput.style.color = txtColor;
       subInput.addEventListener("input", function () { c.sub = subInput.value; buildOutput(); });
       card.appendChild(subInput);
@@ -819,7 +819,7 @@
     chunks.forEach(function (chunk, i) {
       var block = document.createElement("div"); block.className = "output-block";
       var lbl = document.createElement("label"); lbl.style.marginTop = "0";
-      lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
+      lbl.textContent = "Cards (" + (i + 1) + "/4)";
       block.appendChild(lbl);
       var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = chunk;
       block.appendChild(ta);
@@ -847,7 +847,7 @@
       if (!isDuplicate(card.type, card.data)) { cards.push(card); n++; }
     });
     render();
-    toast(n + " kaart(en) ingeladen", n ? "ok" : "err");
+    toast(n + " card(s) loaded", n ? "ok" : "err");
   }
 
   // ---------- events ----------
@@ -855,23 +855,23 @@
     var el = document.getElementById("manualOtp");
     var t = el.value.trim(); if (!t) { return; }
     try {
-      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); toast(n + " account(s) toegevoegd", "ok"); }
-      else { parseOtpAuth(t); toast("2FA-code toegevoegd", "ok"); }
+      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); toast(n + " account(s) added", "ok"); }
+      else { parseOtpAuth(t); toast("2FA code added", "ok"); }
       el.value = "";
-    } catch (e) { toast("Fout: " + e.message, "err"); }
+    } catch (e) { toast("Error: " + e.message, "err"); }
   });
   document.getElementById("manualBcBtn").addEventListener("click", function () {
     var num = document.getElementById("bcNum").value.trim(); if (!num) { return; }
     var fmt = /^\d{13}$/.test(num) ? "EAN13" : "CODE128";
-    addBarcode(document.getElementById("bcName").value.trim() || "Kaart", num, fmt);
+    addBarcode(document.getElementById("bcName").value.trim() || "Card", num, fmt);
     document.getElementById("bcNum").value = ""; document.getElementById("bcName").value = "";
-    toast("Barcode toegevoegd", "ok");
+    toast("Barcode added", "ok");
   });
   document.getElementById("manualQrBtn").addEventListener("click", function () {
     var d = document.getElementById("qrData").value.trim(); if (!d) { return; }
     if (addQr(document.getElementById("qrName").value.trim() || "QR", d)) {
       document.getElementById("qrData").value = ""; document.getElementById("qrName").value = "";
-      toast("QR toegevoegd", "ok");
+      toast("QR added", "ok");
     }
   });
   document.getElementById("restoreBtn").addEventListener("click", function () {
@@ -881,8 +881,8 @@
   document.getElementById("copyBtn").addEventListener("click", function () {
     var all = cards.map(cardLine).join("\n");
     navigator.clipboard.writeText(all).then(
-      function () { toast("Gekopieerd — bij meerdere blokken elk veld apart plakken", "ok"); },
-      function () { toast("Kon niet kopieren, selecteer handmatig", "err"); }
+      function () { toast("Copied — for multiple blocks, paste each field separately", "ok"); },
+      function () { toast("Could not copy, select manually", "err"); }
     );
   });
   var pairInput = document.getElementById("pairCode");
@@ -898,17 +898,17 @@
 
   document.getElementById("sendBtn").addEventListener("click", function () {
     var code = (pairInput.value || "").trim().toUpperCase();
-    if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast("Vul een geldige koppelcode in", "err"); return; }
-    if (cards.length === 0) { toast("Nog geen kaarten om te sturen", "err"); return; }
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast("Enter a valid pairing code", "err"); return; }
+    if (cards.length === 0) { toast("No cards to send yet", "err"); return; }
     try { localStorage.setItem("cv_pair", code); } catch (e) {}
-    toast("Versturen...", "info");
+    toast("Sending...", "info");
     fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") }) })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j.ok) { toast(j.count + " kaart(en) verstuurd — tik op je horloge op de Sync-tegel", "ok"); }
-        else { toast("Fout: " + (j.error || "onbekend"), "err"); }
+        if (j.ok) { toast(j.count + " card(s) sent — tap the Sync tile on your watch", "ok"); }
+        else { toast("Error: " + (j.error || "unknown"), "err"); }
       })
-      .catch(function (e) { toast("Kon niet versturen: " + e.message, "err"); });
+      .catch(function (e) { toast("Could not send: " + e.message, "err"); });
   });
 
   render();
