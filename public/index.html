@@ -4,313 +4,433 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CardVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
   :root {
-    --bg: #0b0e13;
-    --bg2: #0f141b;
-    --panel: #141a22;
-    --panel2: #1a212b;
-    --line: #232c38;
-    --line2: #2e3947;
-    --text: #eef2f6;
-    --muted: #8b97a6;
-    --faint: #5b6672;
+    --bg: #07090d;
+    --panel: rgba(255,255,255,0.035);
+    --panel-solid: #10141b;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.16);
+    --text: #f2f5f9;
+    --muted: #98a2b3;
+    --faint: #5f6b7a;
     --accent: #5b9dff;
-    --accent2: #7c5cff;
-    --ok: #35c46f;
-    --err: #ff6b6b;
-    --warn: #ffb038;
-    --radius: 16px;
+    --accent2: #8b5cf6;
+    --ok: #34d399;
+    --err: #f87171;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background:
-      radial-gradient(1200px 600px at 50% -200px, rgba(124,92,255,0.16), transparent 70%),
-      radial-gradient(900px 500px at 100% 0%, rgba(91,157,255,0.10), transparent 60%),
-      var(--bg);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    line-height: 1.5;
+    line-height: 1.55;
     min-height: 100vh;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 18px 80px; }
+  /* achtergrond-gloed */
+  .glow {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(700px 420px at 20% -8%, rgba(139,92,246,0.16), transparent 65%),
+      radial-gradient(700px 420px at 85% -4%, rgba(91,157,255,0.14), transparent 65%),
+      radial-gradient(900px 700px at 50% 115%, rgba(91,157,255,0.06), transparent 60%);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 44px 20px 90px; }
 
-  header.hero { text-align: center; margin-bottom: 26px; }
-  .logo {
-    display: inline-flex; align-items: center; gap: 10px;
-    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
-  }
-  .logo .mark {
-    width: 30px; height: 30px; border-radius: 8px;
+  /* ---------- header ---------- */
+  header { text-align: center; margin-bottom: 38px; }
+  .logo { display: inline-flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 44px; height: 44px; border-radius: 13px;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     display: inline-flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 18px rgba(91,157,255,0.4);
+    box-shadow: 0 8px 30px rgba(99,120,255,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
   }
-  .logo .mark svg { width: 17px; height: 17px; }
-  .tagline { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
-  .privacy-badge {
-    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
-    font-size: 0.78rem; color: var(--ok);
-    background: rgba(53,196,111,0.10); border: 1px solid rgba(53,196,111,0.25);
-    padding: 5px 11px; border-radius: 999px;
+  .logo-mark svg { width: 22px; height: 22px; }
+  .logo-name { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; }
+  .logo-name em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { color: var(--muted); font-size: 0.95rem; margin-top: 10px; }
+  .badges { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.74rem; font-weight: 600; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+    background: var(--panel);
   }
-  .privacy-badge svg { width: 13px; height: 13px; }
+  .badge svg { width: 13px; height: 13px; color: var(--ok); }
 
-  .panel {
-    background: linear-gradient(180deg, var(--panel), var(--bg2));
+  /* ---------- secties ---------- */
+  section {
+    background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 30px rgba(0,0,0,0.25);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 18px;
+    backdrop-filter: blur(6px);
   }
-  .panel h2 {
-    font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--muted); margin: 0 0 14px; font-weight: 600;
-    display: flex; align-items: center; gap: 8px;
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .sec-title { display: flex; align-items: center; gap: 10px; font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; }
+  .sec-title .ico {
+    width: 32px; height: 32px; border-radius: 9px; flex: 0 0 auto;
+    background: linear-gradient(135deg, rgba(91,157,255,0.18), rgba(139,92,246,0.18));
+    border: 1px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
   }
-  .panel h2 svg { width: 15px; height: 15px; color: var(--accent); }
-  .hint { color: var(--faint); font-size: 0.82rem; margin: -6px 0 14px; }
+  .sec-title .ico svg { width: 15px; height: 15px; color: var(--accent); }
+  .hint { color: var(--faint); font-size: 0.83rem; margin: 0 0 14px; }
+
+  /* ---------- tabs ---------- */
+  .tabs {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+    background: rgba(0,0,0,0.35); border: 1px solid var(--line);
+    border-radius: 12px; padding: 4px; margin-bottom: 18px;
+  }
+  .tab {
+    appearance: none; border: none; cursor: pointer;
+    background: transparent; color: var(--muted);
+    font-family: inherit; font-size: 0.86rem; font-weight: 600;
+    padding: 9px 4px; border-radius: 9px; transition: all .15s;
+  }
+  .tab.active { background: linear-gradient(135deg, rgba(91,157,255,0.22), rgba(139,92,246,0.22)); color: var(--text); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  .tabpane { display: none; }
+  .tabpane.active { display: block; }
 
   video {
-    width: 100%; border-radius: 12px; background: #000; display: block;
-    aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid var(--line);
+    width: 100%; border-radius: 14px; background: #000; display: block;
+    aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--line);
+    margin-bottom: 12px;
   }
   video.hidden { display: none; }
 
   .dropzone {
-    border: 1.5px dashed var(--line2); border-radius: 12px;
-    padding: 22px; text-align: center; color: var(--muted);
-    cursor: pointer; transition: border-color .15s, background .15s;
-    font-size: 0.88rem;
+    border: 1.5px dashed var(--line-strong); border-radius: 14px;
+    padding: 34px 20px; text-align: center; color: var(--muted);
+    cursor: pointer; transition: all .15s; font-size: 0.88rem;
   }
   .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: rgba(91,157,255,0.06); color: var(--text); }
-  .dropzone svg { width: 26px; height: 26px; color: var(--faint); margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+  .dropzone svg { width: 30px; height: 30px; color: var(--faint); display: block; margin: 0 auto 10px; }
+  .dropzone b { color: var(--text); }
+  .dz-sub { font-size: 0.76rem; color: var(--faint); margin-top: 4px; }
 
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
-
+  /* ---------- knoppen & velden ---------- */
   button {
     appearance: none; border: none; cursor: pointer;
     font-family: inherit; font-size: 0.9rem; font-weight: 600;
-    padding: 11px 16px; border-radius: 10px;
+    padding: 12px 18px; border-radius: 12px;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     transition: transform .05s, filter .15s, background .15s;
+    color: var(--text);
   }
   button:active { transform: translateY(1px); }
   button svg { width: 16px; height: 16px; }
-  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 6px 20px rgba(91,157,255,0.30); }
-  .btn-primary:hover { filter: brightness(1.08); }
-  .btn-ghost { background: transparent; border: 1px solid var(--line2); color: var(--text); }
-  .btn-ghost:hover { background: var(--panel2); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+    box-shadow: 0 10px 28px rgba(99,120,255,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-ghost { background: rgba(255,255,255,0.04); border: 1px solid var(--line-strong); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.08); }
   .btn-wide { width: 100%; }
+  .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; }
 
-  label { display: block; font-size: 0.78rem; color: var(--muted); margin: 14px 0 6px; font-weight: 500; }
-  input, textarea, select {
+  label { display: block; font-size: 0.76rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; letter-spacing: 0.02em; }
+  input, textarea {
     width: 100%; font-family: inherit; color: var(--text);
-    background: var(--bg); border: 1px solid var(--line2); border-radius: 10px;
-    padding: 11px 12px; font-size: 0.9rem; transition: border-color .15s;
+    background: rgba(0,0,0,0.35); border: 1px solid var(--line-strong); border-radius: 12px;
+    padding: 12px 13px; font-size: 0.9rem; transition: border-color .15s, box-shadow .15s;
   }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
-  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; min-height: 86px; resize: vertical; line-height: 1.5; }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,157,255,0.15); }
+  textarea { font-family: var(--mono); font-size: 0.78rem; min-height: 88px; resize: vertical; line-height: 1.6; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-  .status { font-size: 0.85rem; margin-top: 12px; min-height: 1.2em; display: flex; align-items: center; gap: 7px; }
-  .status svg { width: 14px; height: 14px; flex: 0 0 auto; }
-  .status.ok { color: var(--ok); }
-  .status.err { color: var(--err); }
-  .status.info { color: var(--muted); }
+  /* ---------- wallet-grid ---------- */
+  .count-pill { font-size: 0.74rem; font-weight: 700; color: var(--muted); background: rgba(0,0,0,0.4); border: 1px solid var(--line); padding: 4px 12px; border-radius: 999px; }
+  .wallet { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .wcard-wrap { position: relative; }
+  .wcard {
+    position: relative; border-radius: 18px; aspect-ratio: 1.62 / 1;
+    padding: 18px; display: flex; flex-direction: column;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.22);
+    overflow: hidden;
+  }
+  .wcard::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(340px 160px at 85% -20%, rgba(255,255,255,0.22), transparent 60%);
+  }
+  .wcard-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .wchip {
+    width: 40px; height: 29px; border-radius: 6px;
+    background: linear-gradient(135deg, #e8c968, #b8912f);
+    position: relative; box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .wchip::before, .wchip::after {
+    content: ""; position: absolute; background: rgba(120,90,20,0.55);
+  }
+  .wchip::before { left: 13px; top: 0; width: 1.5px; height: 100%; box-shadow: 12px 0 0 rgba(120,90,20,0.55); }
+  .wchip::after { left: 0; top: 13px; height: 1.5px; width: 100%; }
+  .wtype {
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em;
+    padding: 3px 8px; border-radius: 5px;
+    background: rgba(0,0,0,0.28); backdrop-filter: blur(2px);
+  }
+  .wcard .spacer { flex: 1; }
+  input.wname {
+    background: transparent; border: none; padding: 0; border-radius: 0;
+    font-size: 1.06rem; font-weight: 700; letter-spacing: -0.01em;
+    width: 100%; border-bottom: 1.5px solid transparent;
+  }
+  input.wname:hover { border-bottom-color: rgba(255,255,255,0.35); }
+  input.wname:focus { outline: none; box-shadow: none; border-bottom-color: currentColor; }
+  input.wsub {
+    background: transparent; border: none; padding: 0; margin-top: 3px; border-radius: 0;
+    font-size: 0.76rem; font-weight: 500; opacity: 0.75; width: 100%;
+    border-bottom: 1.5px solid transparent; color: inherit;
+  }
+  input.wsub:hover { border-bottom-color: rgba(255,255,255,0.3); }
+  input.wsub:focus { outline: none; box-shadow: none; border-bottom-color: currentColor; opacity: 1; }
+  .wdata { font-family: var(--mono); font-size: 0.64rem; opacity: 0.55; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* kaartenlijst */
-  .cards-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
-  .count-pill { font-size: 0.75rem; color: var(--muted); background: var(--panel2); padding: 3px 10px; border-radius: 999px; }
-  .card-row {
-    display: flex; align-items: center; gap: 12px; padding: 11px 0;
-    border-bottom: 1px solid var(--line);
+  .wtools { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding: 0 4px; }
+  .dot {
+    width: 17px; height: 17px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+    flex: 0 0 auto; transition: transform .1s;
   }
-  .card-row:last-child { border-bottom: none; }
-  .chip {
-    width: 42px; height: 28px; border-radius: 6px; flex: 0 0 auto; position: relative;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  .dot:hover { transform: scale(1.2); }
+  .dot.sel { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+  .wtools .del {
+    margin-left: auto; background: transparent; border: none; padding: 6px;
+    color: var(--faint); border-radius: 8px;
   }
-  .chip::after {
-    content: ""; position: absolute; left: 6px; top: 7px; width: 11px; height: 9px;
-    border-radius: 2px; background: rgba(212,175,55,0.9);
+  .wtools .del:hover { color: var(--err); background: rgba(248,113,113,0.1); }
+  .wtools .del svg { width: 15px; height: 15px; }
+  .empty {
+    text-align: center; color: var(--faint); font-size: 0.86rem;
+    border: 1.5px dashed var(--line); border-radius: 16px; padding: 34px 20px;
   }
-  .card-meta { flex: 1; min-width: 0; }
-  .card-name { font-size: 0.94rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; }
-  .card-name .type-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; color: var(--faint); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 5px; flex: 0 0 auto; }
-  .card-desc { font-size: 0.72rem; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
-  input.name-edit {
-    width: auto; flex: 1; min-width: 0;
-    background: transparent; border: none; border-bottom: 1px solid transparent;
-    padding: 2px 0; font-size: 0.94rem; font-weight: 600; color: var(--text);
-    border-radius: 0;
-  }
-  input.name-edit:hover { border-bottom-color: var(--line2); }
-  input.name-edit:focus { outline: none; border-bottom-color: var(--accent); }
-  input.sub-edit {
-    width: 100%; background: transparent; border: none; border-bottom: 1px solid transparent;
-    padding: 2px 0; margin-top: 2px; font-size: 0.78rem; color: var(--muted); border-radius: 0;
-  }
-  input.sub-edit:hover { border-bottom-color: var(--line2); }
-  input.sub-edit:focus { outline: none; border-bottom-color: var(--accent); color: var(--text); }
-  select.color-sel { width: auto; padding: 6px 8px; font-size: 0.76rem; }
-  .icon-btn { background: transparent; border: none; color: var(--faint); padding: 6px; cursor: pointer; border-radius: 8px; }
-  .icon-btn:hover { color: var(--err); background: rgba(255,107,107,0.08); }
-  .icon-btn svg { width: 16px; height: 16px; }
-  .empty { color: var(--faint); font-size: 0.85rem; text-align: center; padding: 18px 0; }
 
-  .output-block { margin-bottom: 12px; }
-  .pair-preview { font-variant-numeric: tabular-nums; letter-spacing: 0.15em; }
-
-  .divider { height: 1px; background: var(--line); margin: 16px 0; border: none; }
-  .steps { counter-reset: step; padding: 0; margin: 0 0 14px; list-style: none; }
-  .steps li { position: relative; padding-left: 30px; margin-bottom: 8px; font-size: 0.85rem; color: var(--muted); }
-  .steps li::before {
-    counter-increment: step; content: counter(step);
-    position: absolute; left: 0; top: 0; width: 20px; height: 20px;
-    background: var(--panel2); border: 1px solid var(--line2); border-radius: 50%;
+  /* ---------- versturen ---------- */
+  .send-panel { text-align: center; }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .step { background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 14px; padding: 13px 10px; }
+  .step-num {
+    width: 22px; height: 22px; margin: 0 auto 8px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; font-size: 0.72rem; font-weight: 800;
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.7rem; font-weight: 700; color: var(--text);
   }
-  footer { text-align: center; color: var(--faint); font-size: 0.75rem; margin-top: 30px; }
+  .step-txt { font-size: 0.74rem; color: var(--muted); line-height: 1.45; }
+  .step-txt b { color: var(--text); }
+  .pair-row { display: flex; gap: 10px; }
+  input.pair {
+    flex: 1; text-align: center; text-transform: uppercase;
+    font-family: var(--mono); font-size: 1.25rem; font-weight: 700; letter-spacing: 0.35em;
+    padding: 13px;
+  }
+  input.pair::placeholder { letter-spacing: 0.12em; font-size: 0.85rem; font-family: "Inter", sans-serif; font-weight: 500; }
+
+  /* ---------- inklapbaar ---------- */
+  details {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+    margin-bottom: 18px; overflow: hidden;
+  }
+  details summary {
+    cursor: pointer; list-style: none; padding: 18px 22px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.95rem; font-weight: 700; color: var(--muted);
+    transition: color .15s;
+  }
+  details summary:hover { color: var(--text); }
+  details summary::-webkit-details-marker { display: none; }
+  details summary .chev { margin-left: auto; transition: transform .2s; }
+  details[open] summary .chev { transform: rotate(180deg); }
+  details summary svg { width: 15px; height: 15px; }
+  .details-body { padding: 0 22px 22px; }
+  .output-block { margin-bottom: 12px; }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-solid); border: 1px solid var(--line-strong);
+    border-radius: 14px; padding: 12px 18px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.87rem; font-weight: 600;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.6);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    z-index: 50; max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  #toast.ok svg { color: var(--ok); }
+  #toast.err svg { color: var(--err); }
+  #toast.info svg { color: var(--accent); }
+
+  footer { text-align: center; color: var(--faint); font-size: 0.76rem; margin-top: 36px; }
+
+  @media (max-width: 560px) {
+    .wallet { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .step { display: flex; align-items: center; gap: 10px; text-align: left; }
+    .step-num { margin: 0; flex: 0 0 auto; }
+  }
 </style>
 </head>
 <body>
+<div class="glow"></div>
 <div class="wrap">
 
-  <header class="hero">
+  <header>
     <div class="logo">
-      <span class="mark">
+      <span class="logo-mark">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
       </span>
-      CardVault
+      <span class="logo-name">Card<em>Vault</em></span>
     </div>
-    <div class="tagline">Je kaarten, codes en 2FA — klaar voor je horloge.</div>
-    <div class="privacy-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Alles blijft in je browser
+    <div class="tagline">Klantenkaarten, tickets en 2FA-codes — altijd op je pols.</div>
+    <div class="badges">
+      <span class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Verwerkt in je browser
+      </span>
+      <span class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        Geen account nodig
+      </span>
     </div>
   </header>
 
-  <!-- Scannen -->
-  <section class="panel">
-    <h2>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
-      Scannen
-    </h2>
-    <p class="hint">Richt op een 2FA-QR, een Google Authenticator export-QR (alle accounts tegelijk), of een barcode. Wordt automatisch herkend.</p>
-    <video id="video" class="hidden" playsinline muted></video>
-    <div class="row">
-      <button id="startBtn" class="btn-primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Camera starten
-      </button>
-      <button id="stopBtn" class="btn-ghost hidden">Stoppen</button>
+  <!-- ============ TOEVOEGEN ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+        Kaart toevoegen
+      </div>
     </div>
 
-    <hr class="divider">
-
-    <div id="dropzone" class="dropzone">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-      Sleep een afbeelding hierheen of <b>klik om te uploaden</b><br>
-      <span style="font-size:0.76rem;color:var(--faint)">een screenshot van een QR- of barcode</span>
+    <div class="tabs">
+      <button class="tab active" data-tab="scan">Scannen</button>
+      <button class="tab" data-tab="upload">Uploaden</button>
+      <button class="tab" data-tab="manual">Handmatig</button>
     </div>
-    <input type="file" id="fileInput" accept="image/*" style="display:none">
 
-    <div id="status" class="status info">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
-      Camera uit.
+    <div class="tabpane active" id="pane-scan">
+      <p class="hint">Richt de camera op een 2FA-QR, een Google Authenticator export-QR (alle accounts in een keer) of een barcode. Het type wordt automatisch herkend.</p>
+      <video id="video" class="hidden" playsinline muted></video>
+      <div class="row">
+        <button id="startBtn" class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Camera starten
+        </button>
+        <button id="stopBtn" class="btn-ghost hidden">Stoppen</button>
+      </div>
+    </div>
+
+    <div class="tabpane" id="pane-upload">
+      <p class="hint">Heb je een screenshot of foto van een QR- of barcode? Sleep hem hierheen.</p>
+      <div id="dropzone" class="dropzone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Sleep een afbeelding hierheen of <b>klik om te kiezen</b>
+        <div class="dz-sub">QR-codes en barcodes worden automatisch gelezen</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+
+    <div class="tabpane" id="pane-manual">
+      <label>2FA-code (otpauth:// of otpauth-migration:// tekst)</label>
+      <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
+      <button id="manualOtpBtn" class="btn-ghost mt8">Verwerken</button>
+
+      <label>Barcode</label>
+      <div class="grid2">
+        <input id="bcNum" placeholder="Nummer">
+        <input id="bcName" placeholder="Naam">
+      </div>
+      <button id="manualBcBtn" class="btn-ghost mt8">Toevoegen</button>
+
+      <label>QR-code (ticket, wifi, link)</label>
+      <div class="grid2">
+        <input id="qrData" placeholder="URL of tekst">
+        <input id="qrName" placeholder="Naam">
+      </div>
+      <button id="manualQrBtn" class="btn-ghost mt8">Toevoegen</button>
     </div>
   </section>
 
-  <!-- Handmatig -->
-  <section class="panel">
-    <h2>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-      Handmatig toevoegen
-    </h2>
-    <label>2FA — otpauth:// of otpauth-migration:// tekst</label>
-    <textarea id="manualOtp" placeholder="otpauth://totp/Voorbeeld:jij@mail.com?secret=JBSWY3DPEHPK3PXP&issuer=Voorbeeld"></textarea>
-    <button id="manualOtpBtn" class="btn-ghost" style="margin-top:8px">Verwerken</button>
-
-    <label>Barcode — nummer + naam</label>
-    <div class="grid2">
-      <input id="bcNum" placeholder="Nummer">
-      <input id="bcName" placeholder="Naam">
+  <!-- ============ KAARTEN ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+        Jouw wallet
+      </div>
+      <span class="count-pill" id="cardCount">0 kaarten</span>
     </div>
-    <button id="manualBcBtn" class="btn-ghost" style="margin-top:8px">Barcode toevoegen</button>
-
-    <label>QR — URL of tekst + naam (tickets, wifi, lidmaatschap)</label>
-    <div class="grid2">
-      <input id="qrData" placeholder="URL of tekst">
-      <input id="qrName" placeholder="Naam">
-    </div>
-    <button id="manualQrBtn" class="btn-ghost" style="margin-top:8px">QR toevoegen</button>
+    <div id="wallet" class="wallet"></div>
+    <div id="emptyHint" class="empty">Nog leeg — scan, upload of voeg iets toe hierboven.<br>Klik op een kaartnaam om hem te wijzigen.</div>
   </section>
 
-  <!-- Kaarten -->
-  <section class="panel">
-    <div class="cards-head">
-      <h2 style="margin:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-        Kaarten
-      </h2>
-      <span class="count-pill" id="cardCount">0</span>
+  <!-- ============ VERSTUREN ============ -->
+  <section class="send-panel">
+    <div class="sec-head" style="justify-content:center">
+      <div class="sec-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="10" rx="2"/><path d="M9 7V4h6v3M9 17v3h6v-3"/></svg></span>
+        Naar je horloge
+      </div>
     </div>
-    <div id="cardList"></div>
-    <div id="emptyHint" class="empty">Nog geen kaarten — scan, upload of voeg handmatig toe.</div>
-  </section>
-
-  <!-- Naar horloge -->
-  <section class="panel">
-    <h2>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="7" width="12" height="10" rx="2"/><path d="M9 7V4h6v3M9 17v3h6v-3"/></svg>
-      Naar horloge sturen
-    </h2>
-    <ol class="steps">
-      <li>Open CardVault op je horloge, dan het menu en <b>Sync</b>.</li>
-      <li>Typ de getoonde koppelcode hieronder in en verstuur.</li>
-      <li>Tik op je horloge op <b>Ophalen</b>.</li>
-    </ol>
-    <div class="row">
-      <input id="pairCode" placeholder="KOPPELCODE" maxlength="8" class="pair-preview" style="flex:1;text-transform:uppercase;text-align:center;font-weight:700">
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-txt">Open CardVault op je horloge en swipe naar de <b>Sync-tegel</b></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-txt">Typ de <b>koppelcode</b> van de tegel hieronder in en verstuur</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-txt">Tik op je horloge op de tegel om <b>op te halen</b></div></div>
+    </div>
+    <div class="pair-row">
+      <input id="pairCode" class="pair" placeholder="Koppelcode" maxlength="8" autocomplete="off">
       <button id="sendBtn" class="btn-primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
         Versturen
       </button>
     </div>
-    <div id="sendStatus" class="status info"></div>
   </section>
 
-  <!-- Plakken -->
-  <section class="panel">
-    <h2>
+  <!-- ============ GEAVANCEERD ============ -->
+  <details>
+    <summary>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      Of plakken in Garmin Connect
-    </h2>
-    <p class="hint">Zonder horloge-sync: kopieer dit blok en plak het in het veld Kaarten (1/4) van CardVault. Te lang? De blokken 2/4, 3/4 verschijnen vanzelf.</p>
-    <div id="outputs"></div>
-    <button id="copyBtn" class="btn-ghost btn-wide">Kopiëren</button>
-    <div id="copyStatus" class="status info"></div>
-  </section>
+      Handmatig plakken in Garmin Connect
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </summary>
+    <div class="details-body">
+      <p class="hint">Zonder sync: kopieer dit blok en plak het in het veld Kaarten (1/4) van CardVault in de Garmin Connect-app. Bij veel kaarten verschijnen blokken 2/4, 3/4 vanzelf.</p>
+      <div id="outputs"></div>
+      <button id="copyBtn" class="btn-ghost btn-wide">Kopieren</button>
+    </div>
+  </details>
 
-  <!-- Backup -->
-  <section class="panel">
-    <h2>
+  <details>
+    <summary>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
       Back-up en herstellen
-    </h2>
-    <p class="hint">Plak een eerder opgeslagen blok om je kaarten terug te laden en te bewerken.</p>
-    <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
-    <button id="restoreBtn" class="btn-ghost" style="margin-top:8px">Inladen</button>
-  </section>
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </summary>
+    <div class="details-body">
+      <p class="hint">Bewaar het blok hierboven als back-up. Plak het hier om je kaarten terug te laden en verder te bewerken.</p>
+      <textarea id="restoreIn" placeholder="barcode|Sportschool|Lidmaatschap|blue|card|9501101530003|CODE128|Sport"></textarea>
+      <button id="restoreBtn" class="btn-ghost mt8">Inladen</button>
+    </div>
+  </details>
 
-  <footer>CardVault — lokaal, privacyvriendelijk. Geen account nodig.</footer>
+  <footer>CardVault verwerkt alles lokaal in je browser. Kaartdata voor sync wordt maximaal 30 minuten bewaard en daarna gewist.</footer>
 </div>
+
+<div id="toast"><span id="toast-ico"></span><span id="toast-msg"></span></div>
 
 <script>
 (function () {
@@ -323,7 +443,7 @@
     pink:"#ff2d92", yellow:"#ffd60a", dkblue:"#0a3d91", dkgreen:"#1b6b2f", dkred:"#8a1c1c",
     ltgray:"#c8c8c8", dkgray:"#3a3a3a", white:"#ffffff"
   };
-  var ALL_COLORS = Object.keys(COLOR_HEX);
+  var PICK_COLORS = ["blue","green","orange","purple","red","pink","yellow","dkblue","dkgreen","dkgray"];
 
   var cards = [];
   var colorCursor = 0;
@@ -335,34 +455,31 @@
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
   };
 
-  var els = {
-    video: document.getElementById('video'),
-    startBtn: document.getElementById('startBtn'),
-    stopBtn: document.getElementById('stopBtn'),
-    status: document.getElementById('status'),
-    dropzone: document.getElementById('dropzone'),
-    fileInput: document.getElementById('fileInput'),
-    cardList: document.getElementById('cardList'),
-    cardCount: document.getElementById('cardCount'),
-    emptyHint: document.getElementById('emptyHint'),
-    outputs: document.getElementById('outputs'),
-    copyBtn: document.getElementById('copyBtn'),
-    copyStatus: document.getElementById('copyStatus'),
-    manualOtp: document.getElementById('manualOtp'),
-    manualOtpBtn: document.getElementById('manualOtpBtn'),
-    bcNum: document.getElementById('bcNum'),
-    bcName: document.getElementById('bcName'),
-    manualBcBtn: document.getElementById('manualBcBtn'),
-    restoreIn: document.getElementById('restoreIn'),
-    restoreBtn: document.getElementById('restoreBtn')
-  };
-
-  function setStatus(msg, kind) {
-    els.status.className = "status " + (kind || 'info');
-    els.status.innerHTML = (ICON[kind] || ICON.info) + "<span>" + msg + "</span>";
+  // ---------- toast ----------
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg, kind) {
+    kind = kind || "info";
+    toastEl.className = "show " + kind;
+    document.getElementById("toast-ico").innerHTML = ICON[kind] || ICON.info;
+    document.getElementById("toast-msg").textContent = msg;
+    if (toastTimer) { clearTimeout(toastTimer); }
+    toastTimer = setTimeout(function () { toastEl.className = ""; }, 4200);
   }
 
-  // ---------- Base32 ----------
+  // ---------- tabs ----------
+  var tabs = document.querySelectorAll(".tab");
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      tabs.forEach(function (x) { x.classList.remove("active"); });
+      document.querySelectorAll(".tabpane").forEach(function (p) { p.classList.remove("active"); });
+      t.classList.add("active");
+      document.getElementById("pane-" + t.dataset.tab).classList.add("active");
+      if (t.dataset.tab !== "scan") { stopScan(); }
+    });
+  });
+
+  // ---------- base32 / protobuf / otpauth ----------
   function base32Encode(bytes) {
     var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     var bits = 0, value = 0, out = "";
@@ -378,8 +495,6 @@
     for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
     return out;
   }
-
-  // ---------- protobuf-mini voor migration ----------
   function readVarint(bytes, i) {
     var result = 0, shift = 0, b;
     do { b = bytes[i++]; result |= (b & 0x7f) << shift; shift += 7; } while (b & 0x80);
@@ -393,7 +508,6 @@
     return bytes.length;
   }
   function utf8(bytes) { try { return new TextDecoder("utf-8").decode(bytes); } catch (e) { return ""; } }
-
   function parseOtpParams(msg) {
     var i = 0, secret = null, name = "", issuer = "", digits = 6, type = 2, algo = 1;
     while (i < msg.length) {
@@ -409,7 +523,6 @@
     return { secret: secret, name: name, issuer: issuer, digits: digits, type: type, algo: algo };
   }
   var ALGO_NAMES = { 1: "SHA1", 2: "SHA256", 3: "SHA512" };
-
   function parseMigration(uri) {
     var m = uri.match(/[?&]data=([^&]+)/);
     if (!m) { throw new Error("geen data in migration-QR"); }
@@ -430,7 +543,6 @@
     if (added === 0) { throw new Error("geen TOTP-accounts gevonden"); }
     return added;
   }
-
   function parseOtpAuth(text) {
     var url = new URL(text);
     if (url.protocol !== "otpauth:") { throw new Error("geen otpauth:// URI"); }
@@ -452,7 +564,6 @@
   // ---------- toevoegers ----------
   function nextColor() { var c = COLORS[colorCursor % COLORS.length]; colorCursor++; return c; }
   function isDuplicate(type, data) { return cards.some(function (c) { return c.type === type && c.data === data; }); }
-
   function addTotp(issuer, account, secret, algo, digits, period) {
     if (isDuplicate("totp", secret)) { return false; }
     cards.push({ type: "totp", name: issuer || "2FA", sub: account || "", color: "dkgray", icon: "lock", data: secret, extra: algo + ":" + digits + ":" + period, category: "2FA" });
@@ -465,13 +576,17 @@
   }
   function addQr(name, data) {
     if (isDuplicate("qr", data)) { return false; }
-    if (data.length > 230) { setStatus("QR-tekst te lang (max ~230 tekens).", "err"); return false; }
+    if (data.length > 230) { toast("QR-tekst te lang (max ~230 tekens)", "err"); return false; }
     cards.push({ type: "qr", name: name || "QR", sub: "", color: nextColor(), icon: "ticket", data: data, extra: "QR", category: "Overig" });
     render(); return true;
   }
 
-  // ---------- ZXing ----------
+  // ---------- scanner ----------
+  var video = document.getElementById("video");
+  var startBtn = document.getElementById("startBtn");
+  var stopBtn = document.getElementById("stopBtn");
   var reader = null;
+
   function barcodeFormatName(fmtEnum) {
     var BF = ZXing.BarcodeFormat;
     if (fmtEnum === BF.QR_CODE) { return "QR"; }
@@ -482,124 +597,149 @@
     var BF = ZXing.BarcodeFormat;
     try {
       if (fmtEnum === BF.QR_CODE) {
-        if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); setStatus(n + " 2FA-account(s) geïmporteerd", "ok"); }
-        else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); setStatus("2FA-code toegevoegd", "ok"); }
-        else { var q = addQr("QR " + (cards.length + 1), text); setStatus(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
+        if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); toast(n + " 2FA-account(s) geimporteerd", "ok"); }
+        else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); toast("2FA-code toegevoegd", "ok"); }
+        else { var q = addQr("QR " + (cards.length + 1), text); toast(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
       } else {
         var fmt = barcodeFormatName(fmtEnum);
         var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
-        setStatus(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+        toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
       }
-    } catch (e) { setStatus("Kon niet verwerken: " + e.message, "err"); }
+    } catch (e) { toast("Kon niet verwerken: " + e.message, "err"); }
   }
-
   function startScan() {
-    if (typeof ZXing === "undefined") { setStatus("Scanner niet geladen (internet nodig).", "err"); return; }
+    if (typeof ZXing === "undefined") { toast("Scanner niet geladen (internet nodig)", "err"); return; }
     reader = new ZXing.BrowserMultiFormatReader();
-    setStatus("Camera starten...", "info");
-    reader.decodeFromVideoDevice(null, els.video, function (result) {
+    reader.decodeFromVideoDevice(null, video, function (result) {
       if (result) { handleResult(result.getText(), result.getBarcodeFormat()); }
     }).then(function () {
-      setStatus("Richt op een QR of barcode...", "info");
-      els.video.classList.remove("hidden");
-      els.startBtn.classList.add("hidden");
-      els.stopBtn.classList.remove("hidden");
-    }).catch(function (e) { setStatus("Kon camera niet openen: " + e.message, "err"); });
+      video.classList.remove("hidden");
+      startBtn.classList.add("hidden");
+      stopBtn.classList.remove("hidden");
+      toast("Richt op een QR of barcode", "info");
+    }).catch(function (e) { toast("Kon camera niet openen: " + e.message, "err"); });
   }
   function stopScan() {
     if (reader) { reader.reset(); reader = null; }
-    els.video.classList.add("hidden");
-    els.startBtn.classList.remove("hidden");
-    els.stopBtn.classList.add("hidden");
-    setStatus("Camera uit.", "info");
+    video.classList.add("hidden");
+    startBtn.classList.remove("hidden");
+    stopBtn.classList.add("hidden");
   }
+  startBtn.addEventListener("click", startScan);
+  stopBtn.addEventListener("click", stopScan);
 
-  // ---------- Afbeelding-upload ----------
+  // ---------- upload ----------
+  var dropzone = document.getElementById("dropzone");
+  var fileInput = document.getElementById("fileInput");
   function decodeImageFile(file) {
-    if (!file || !/^image\//.test(file.type)) { setStatus("Geen geldige afbeelding.", "err"); return; }
-    setStatus("Afbeelding scannen...", "info");
+    if (!file || !/^image\//.test(file.type)) { toast("Geen geldige afbeelding", "err"); return; }
+    toast("Afbeelding scannen...", "info");
     var url = URL.createObjectURL(file);
     var r = new ZXing.BrowserMultiFormatReader();
     r.decodeFromImageUrl(url).then(function (result) {
       handleResult(result.getText(), result.getBarcodeFormat());
       URL.revokeObjectURL(url);
     }).catch(function () {
-      setStatus("Geen QR of barcode gevonden in de afbeelding.", "err");
+      toast("Geen QR of barcode gevonden in de afbeelding", "err");
       URL.revokeObjectURL(url);
     });
   }
+  dropzone.addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
+  ["dragenter","dragover"].forEach(function (ev) { dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.add("drag"); }); });
+  ["dragleave","drop"].forEach(function (ev) { dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.remove("drag"); }); });
+  dropzone.addEventListener("drop", function (e) { if (e.dataTransfer.files[0]) { decodeImageFile(e.dataTransfer.files[0]); } });
 
-  // ---------- render ----------
+  // ---------- wallet render ----------
+  var walletEl = document.getElementById("wallet");
+  var emptyEl = document.getElementById("emptyHint");
+  var countEl = document.getElementById("cardCount");
+
   function escapePipe(s) { return String(s).replace(/\|/g, "\\|"); }
   function cardLine(c) {
     return [c.type, escapePipe(c.name), escapePipe(c.sub), c.color, c.icon, escapePipe(c.data), c.extra, c.category].join("|");
   }
   function typeLabel(t) { return t === "totp" ? "2FA" : (t === "qr" ? "QR" : "PAS"); }
+  function shade(hex, f) {
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    r = Math.round(r*f); g = Math.round(g*f); b = Math.round(b*f);
+    return "rgb(" + r + "," + g + "," + b + ")";
+  }
+  function luma(hex) {
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return (r*299 + g*587 + b*114) / 1000;
+  }
 
   function render() {
-    els.cardCount.textContent = cards.length;
-    els.emptyHint.style.display = cards.length ? "none" : "block";
-    els.cardList.innerHTML = "";
+    countEl.textContent = cards.length + (cards.length === 1 ? " kaart" : " kaarten");
+    emptyEl.style.display = cards.length ? "none" : "block";
+    walletEl.innerHTML = "";
 
     cards.forEach(function (c, idx) {
-      var row = document.createElement("div");
-      row.className = "card-row";
+      var hex = COLOR_HEX[c.color] || "#555";
+      var txtColor = luma(hex) > 150 ? "#111418" : "#ffffff";
 
-      var chip = document.createElement("div");
-      chip.className = "chip";
-      chip.style.background = "linear-gradient(135deg," + (COLOR_HEX[c.color] || "#888") + ", rgba(0,0,0,0.35))";
-      row.appendChild(chip);
+      var wrap = document.createElement("div");
+      wrap.className = "wcard-wrap";
 
-      var meta = document.createElement("div");
-      meta.className = "card-meta";
+      var card = document.createElement("div");
+      card.className = "wcard";
+      card.style.background = "linear-gradient(135deg, " + hex + " 0%, " + shade(hex, 0.55) + " 100%)";
+      card.style.color = txtColor;
 
-      // Naam bewerkbaar via een inline invoerveld.
-      var nameWrap = document.createElement("div");
-      nameWrap.className = "card-name";
+      var top = document.createElement("div");
+      top.className = "wcard-top";
+      var chip = document.createElement("span"); chip.className = "wchip";
+      var tag = document.createElement("span"); tag.className = "wtype"; tag.textContent = typeLabel(c.type);
+      top.appendChild(chip); top.appendChild(tag);
+      card.appendChild(top);
+
+      var spacer = document.createElement("div"); spacer.className = "spacer";
+      card.appendChild(spacer);
+
       var nameInput = document.createElement("input");
-      nameInput.className = "name-edit";
-      nameInput.value = c.name;
-      nameInput.placeholder = "Naam";
+      nameInput.className = "wname"; nameInput.value = c.name; nameInput.placeholder = "Naam";
+      nameInput.style.color = txtColor;
       nameInput.addEventListener("input", function () { c.name = nameInput.value; buildOutput(); });
-      var tag = document.createElement("span");
-      tag.className = "type-tag"; tag.textContent = typeLabel(c.type);
-      nameWrap.appendChild(nameInput); nameWrap.appendChild(tag);
+      card.appendChild(nameInput);
 
-      // Subtekst bewerkbaar (bij barcode/qr; bij totp is dit het account).
       var subInput = document.createElement("input");
-      subInput.className = "sub-edit";
-      subInput.value = c.sub || "";
-      subInput.placeholder = "Subtekst (optioneel)";
+      subInput.className = "wsub"; subInput.value = c.sub || ""; subInput.placeholder = "Subtekst";
+      subInput.style.color = txtColor;
       subInput.addEventListener("input", function () { c.sub = subInput.value; buildOutput(); });
+      card.appendChild(subInput);
 
-      var ds = document.createElement("div");
-      ds.className = "card-desc";
-      ds.textContent = (c.type === "totp") ? c.extra : (c.type === "qr" ? c.data : c.extra + " · " + c.data);
+      var data = document.createElement("div");
+      data.className = "wdata";
+      data.textContent = (c.type === "totp") ? c.extra : c.data;
+      card.appendChild(data);
 
-      meta.appendChild(nameWrap); meta.appendChild(subInput); meta.appendChild(ds);
-      row.appendChild(meta);
+      wrap.appendChild(card);
 
-      var sel = document.createElement("select");
-      sel.className = "color-sel";
-      ALL_COLORS.forEach(function (col) {
-        var o = document.createElement("option"); o.value = col; o.textContent = col;
-        if (col === c.color) { o.selected = true; } sel.appendChild(o);
+      // toolbar: kleurstippen + verwijderen
+      var tools = document.createElement("div");
+      tools.className = "wtools";
+      PICK_COLORS.forEach(function (col) {
+        var dot = document.createElement("span");
+        dot.className = "dot" + (col === c.color ? " sel" : "");
+        dot.style.background = COLOR_HEX[col];
+        dot.title = col;
+        dot.addEventListener("click", function () { c.color = col; render(); });
+        tools.appendChild(dot);
       });
-      sel.addEventListener("change", function () { c.color = sel.value; chip.style.background = "linear-gradient(135deg," + COLOR_HEX[c.color] + ", rgba(0,0,0,0.35))"; buildOutput(); });
-      row.appendChild(sel);
-
       var del = document.createElement("button");
-      del.className = "icon-btn"; del.title = "Verwijderen"; del.innerHTML = ICON.trash;
+      del.className = "del"; del.title = "Verwijderen"; del.innerHTML = ICON.trash;
       del.addEventListener("click", function () { cards.splice(idx, 1); render(); });
-      row.appendChild(del);
+      tools.appendChild(del);
+      wrap.appendChild(tools);
 
-      els.cardList.appendChild(row);
+      walletEl.appendChild(wrap);
     });
     buildOutput();
   }
 
-  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (m) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" })[m]; }); }
-
+  // ---------- output ----------
+  var outputsEl = document.getElementById("outputs");
   function buildOutput() {
     var lines = cards.map(cardLine);
     var chunks = [""];
@@ -609,21 +749,21 @@
       if (candidate.length > CHUNK_SIZE && last.length) { chunks.push(line); }
       else { chunks[chunks.length - 1] = candidate; }
     });
-    els.outputs.innerHTML = "";
+    outputsEl.innerHTML = "";
     chunks.forEach(function (chunk, i) {
       var block = document.createElement("div"); block.className = "output-block";
-      if (chunks.length > 1 || i === 0) {
-        var lbl = document.createElement("label"); lbl.style.marginTop = "0"; lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
-        block.appendChild(lbl);
-      }
+      var lbl = document.createElement("label"); lbl.style.marginTop = "0";
+      lbl.textContent = "Kaarten (" + (i + 1) + "/4)";
+      block.appendChild(lbl);
       var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = chunk;
-      block.appendChild(ta); els.outputs.appendChild(block);
+      block.appendChild(ta);
+      outputsEl.appendChild(block);
     });
   }
 
   // ---------- restore ----------
   function splitEscaped(text, sep) {
-    var ph = ""; var protectedText = text.split("\\" + sep).join(ph);
+    var ph = ""; var protectedText = text.split("\\" + sep).join(ph);
     return protectedText.split(sep).map(function (p) { return p.split(ph).join(sep).trim(); });
   }
   function restore(text) {
@@ -641,62 +781,56 @@
       if (!isDuplicate(card.type, card.data)) { cards.push(card); n++; }
     });
     render();
-    setStatus(n + " kaart(en) ingeladen", n ? "ok" : "err");
+    toast(n + " kaart(en) ingeladen", n ? "ok" : "err");
   }
 
   // ---------- events ----------
-  els.startBtn.addEventListener("click", startScan);
-  els.stopBtn.addEventListener("click", stopScan);
-
-  els.dropzone.addEventListener("click", function () { els.fileInput.click(); });
-  els.fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
-  ["dragenter","dragover"].forEach(function (ev) { els.dropzone.addEventListener(ev, function (e) { e.preventDefault(); els.dropzone.classList.add("drag"); }); });
-  ["dragleave","drop"].forEach(function (ev) { els.dropzone.addEventListener(ev, function (e) { e.preventDefault(); els.dropzone.classList.remove("drag"); }); });
-  els.dropzone.addEventListener("drop", function (e) { if (e.dataTransfer.files[0]) { decodeImageFile(e.dataTransfer.files[0]); } });
-
-  els.manualOtpBtn.addEventListener("click", function () {
-    var t = els.manualOtp.value.trim(); if (!t) { return; }
+  document.getElementById("manualOtpBtn").addEventListener("click", function () {
+    var el = document.getElementById("manualOtp");
+    var t = el.value.trim(); if (!t) { return; }
     try {
-      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); setStatus(n + " account(s) toegevoegd", "ok"); }
-      else { parseOtpAuth(t); setStatus("Toegevoegd", "ok"); }
-      els.manualOtp.value = "";
-    } catch (e) { setStatus("Fout: " + e.message, "err"); }
+      if (/^otpauth-migration:/i.test(t)) { var n = parseMigration(t); toast(n + " account(s) toegevoegd", "ok"); }
+      else { parseOtpAuth(t); toast("2FA-code toegevoegd", "ok"); }
+      el.value = "";
+    } catch (e) { toast("Fout: " + e.message, "err"); }
   });
-  els.manualBcBtn.addEventListener("click", function () {
-    var num = els.bcNum.value.trim(); if (!num) { return; }
+  document.getElementById("manualBcBtn").addEventListener("click", function () {
+    var num = document.getElementById("bcNum").value.trim(); if (!num) { return; }
     var fmt = /^\d{13}$/.test(num) ? "EAN13" : "CODE128";
-    addBarcode(els.bcName.value.trim() || "Kaart", num, fmt);
-    els.bcNum.value = ""; els.bcName.value = ""; setStatus("Barcode toegevoegd", "ok");
+    addBarcode(document.getElementById("bcName").value.trim() || "Kaart", num, fmt);
+    document.getElementById("bcNum").value = ""; document.getElementById("bcName").value = "";
+    toast("Barcode toegevoegd", "ok");
   });
   document.getElementById("manualQrBtn").addEventListener("click", function () {
     var d = document.getElementById("qrData").value.trim(); if (!d) { return; }
     if (addQr(document.getElementById("qrName").value.trim() || "QR", d)) {
-      document.getElementById("qrData").value = ""; document.getElementById("qrName").value = ""; setStatus("QR toegevoegd", "ok");
+      document.getElementById("qrData").value = ""; document.getElementById("qrName").value = "";
+      toast("QR toegevoegd", "ok");
     }
   });
-  els.restoreBtn.addEventListener("click", function () {
-    var t = els.restoreIn.value.trim(); if (t) { restore(t); els.restoreIn.value = ""; }
+  document.getElementById("restoreBtn").addEventListener("click", function () {
+    var el = document.getElementById("restoreIn");
+    var t = el.value.trim(); if (t) { restore(t); el.value = ""; }
   });
-
-  var sendStatus = document.getElementById("sendStatus");
-  function setSend(msg, kind) { sendStatus.className = "status " + (kind || "info"); sendStatus.innerHTML = (ICON[kind] || ICON.info) + "<span>" + msg + "</span>"; }
-  document.getElementById("sendBtn").addEventListener("click", function () {
-    var code = (document.getElementById("pairCode").value || "").trim().toUpperCase();
-    if (!/^[A-Z0-9]{4,8}$/.test(code)) { setSend("Vul een geldige koppelcode in.", "err"); return; }
-    if (cards.length === 0) { setSend("Nog geen kaarten om te sturen.", "err"); return; }
-    setSend("Versturen...", "info");
-    fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") }) })
-      .then(function (r) { return r.json(); })
-      .then(function (j) { if (j.ok) { setSend(j.count + " kaart(en) verstuurd. Tik nu op je horloge op Ophalen.", "ok"); } else { setSend("Fout: " + (j.error || "onbekend"), "err"); } })
-      .catch(function (e) { setSend("Kon niet versturen: " + e.message, "err"); });
-  });
-
-  els.copyBtn.addEventListener("click", function () {
+  document.getElementById("copyBtn").addEventListener("click", function () {
     var all = cards.map(cardLine).join("\n");
     navigator.clipboard.writeText(all).then(
-      function () { els.copyStatus.className = "status ok"; els.copyStatus.innerHTML = ICON.ok + "<span>Gekopieerd. Bij meerdere blokken: kopieer elk veld apart.</span>"; },
-      function () { els.copyStatus.className = "status err"; els.copyStatus.innerHTML = ICON.err + "<span>Kon niet kopiëren — selecteer handmatig.</span>"; }
+      function () { toast("Gekopieerd — bij meerdere blokken elk veld apart plakken", "ok"); },
+      function () { toast("Kon niet kopieren, selecteer handmatig", "err"); }
     );
+  });
+  document.getElementById("sendBtn").addEventListener("click", function () {
+    var code = (document.getElementById("pairCode").value || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast("Vul een geldige koppelcode in", "err"); return; }
+    if (cards.length === 0) { toast("Nog geen kaarten om te sturen", "err"); return; }
+    toast("Versturen...", "info");
+    fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.ok) { toast(j.count + " kaart(en) verstuurd — tik op je horloge op de Sync-tegel", "ok"); }
+        else { toast("Fout: " + (j.error || "onbekend"), "err"); }
+      })
+      .catch(function (e) { toast("Kon niet versturen: " + e.message, "err"); });
   });
 
   render();
