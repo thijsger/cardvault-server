@@ -885,10 +885,22 @@
       function () { toast("Kon niet kopieren, selecteer handmatig", "err"); }
     );
   });
+  var pairInput = document.getElementById("pairCode");
+
+  // Onthoud de koppelcode in de browser, zodat je 'm maar één keer hoeft te typen.
+  var savedCode = "";
+  try { savedCode = localStorage.getItem("cv_pair") || ""; } catch (e) {}
+  if (savedCode) { pairInput.value = savedCode; }
+  pairInput.addEventListener("input", function () {
+    var v = (pairInput.value || "").trim().toUpperCase();
+    try { if (/^[A-Z0-9]{4,8}$/.test(v)) { localStorage.setItem("cv_pair", v); } } catch (e) {}
+  });
+
   document.getElementById("sendBtn").addEventListener("click", function () {
-    var code = (document.getElementById("pairCode").value || "").trim().toUpperCase();
+    var code = (pairInput.value || "").trim().toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast("Vul een geldige koppelcode in", "err"); return; }
     if (cards.length === 0) { toast("Nog geen kaarten om te sturen", "err"); return; }
+    try { localStorage.setItem("cv_pair", code); } catch (e) {}
     toast("Versturen...", "info");
     fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, cards: cards.map(cardLine).join("\n") }) })
       .then(function (r) { return r.json(); })
