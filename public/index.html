@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
   :root {
     --bg: #07090d;
@@ -593,19 +594,23 @@
     if (fmtEnum === BF.EAN_13) { return "EAN13"; }
     return "CODE128";
   }
+  // Inhoud van een QR-code verwerken (2FA / migration / vrije QR).
+  function handleQrText(text) {
+    try {
+      if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); toast(n + " 2FA-account(s) geimporteerd", "ok"); }
+      else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); toast("2FA-code toegevoegd", "ok"); }
+      else { var q = addQr("QR " + (cards.length + 1), text); toast(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
+    } catch (e) { toast("Kon niet verwerken: " + e.message, "err"); }
+  }
   function handleResult(text, fmtEnum) {
     var BF = ZXing.BarcodeFormat;
-    try {
-      if (fmtEnum === BF.QR_CODE) {
-        if (/^otpauth-migration:\/\//i.test(text)) { var n = parseMigration(text); toast(n + " 2FA-account(s) geimporteerd", "ok"); }
-        else if (/^otpauth:\/\//i.test(text)) { parseOtpAuth(text); toast("2FA-code toegevoegd", "ok"); }
-        else { var q = addQr("QR " + (cards.length + 1), text); toast(q ? "QR-code toegevoegd" : "Al toegevoegd of te lang", q ? "ok" : "info"); }
-      } else {
-        var fmt = barcodeFormatName(fmtEnum);
-        var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
-        toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
-      }
-    } catch (e) { toast("Kon niet verwerken: " + e.message, "err"); }
+    if (fmtEnum === BF.QR_CODE) {
+      handleQrText(text);
+    } else {
+      var fmt = barcodeFormatName(fmtEnum);
+      var added = addBarcode("Kaart " + (cards.length + 1), text, fmt);
+      toast(added ? ("Barcode toegevoegd (" + fmt + ")") : "Al toegevoegd", added ? "ok" : "info");
+    }
   }
   function startScan() {
     if (typeof ZXing === "undefined") { toast("Scanner niet geladen (internet nodig)", "err"); return; }
@@ -631,59 +636,56 @@
   // ---------- upload ----------
   var dropzone = document.getElementById("dropzone");
   var fileInput = document.getElementById("fileInput");
-  function makeReader() {
-    // TRY_HARDER: scant grondiger, ook als de code klein/schuin op de foto staat.
-    var hints = null;
-    try {
-      hints = new Map();
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    } catch (e) { hints = null; }
-    return new ZXing.BrowserMultiFormatReader(hints);
-  }
-
   function decodeImageFile(file) {
     if (!file || !/^image\//.test(file.type)) { toast("Geen geldige afbeelding", "err"); return; }
     toast("Afbeelding scannen...", "info");
     var url = URL.createObjectURL(file);
     var img = new Image();
     img.onload = function () {
-      // Teken op een canvas (grote foto's schalen we terug voor snelheid/betrouwbaarheid).
-      var maxDim = 1800;
-      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      var canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-
-      var r = makeReader();
-      // Eerst het hele plaatje; lukt dat niet, probeer een ingezoomd middenstuk
-      // (helpt als de code klein in het midden van een foto staat).
-      if (tryCanvas(r, canvas)) { return; }
-      var crop = centerCrop(canvas, 0.6);
-      if (tryCanvas(r, crop)) { return; }
-      toast("Geen QR of barcode gevonden. Probeer een scherpere of grotere foto.", "err");
+      // 1) QR-codes: jsQR op de pixeldata (heel betrouwbaar voor screenshots/foto's).
+      //    Meerdere schalen proberen zodat zowel grote foto's als kleine QR's werken.
+      var scales = [1400, 800, 2000];
+      for (var s = 0; s < scales.length; s++) {
+        var text = tryJsQR(img, scales[s]);
+        if (text) { handleQrText(text); return; }
+      }
+      // 2) Barcodes: ZXing als terugval.
+      tryZxingBarcode(img);
     };
     img.onerror = function () { URL.revokeObjectURL(url); toast("Kon de afbeelding niet laden", "err"); };
     img.src = url;
   }
 
-  function tryCanvas(reader, canvas) {
-    try {
-      var result = reader.decodeFromCanvas(canvas);
-      if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return true; }
-    } catch (e) { /* NotFoundException -> volgende poging */ }
-    return false;
+  function drawToCanvas(img, maxDim) {
+    var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
   }
 
-  function centerCrop(canvas, frac) {
-    var cw = Math.round(canvas.width * frac);
-    var ch = Math.round(canvas.height * frac);
-    var out = document.createElement("canvas");
-    out.width = canvas.width; out.height = canvas.height;
-    var ctx = out.getContext("2d");
-    ctx.drawImage(canvas, (canvas.width - cw) / 2, (canvas.height - ch) / 2, cw, ch, 0, 0, canvas.width, canvas.height);
-    return out;
+  function tryJsQR(img, maxDim) {
+    if (typeof jsQR === "undefined") { return null; }
+    try {
+      var canvas = drawToCanvas(img, maxDim);
+      var ctx = canvas.getContext("2d");
+      var data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var res = jsQR(data.data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
+      return (res && res.data) ? res.data : null;
+    } catch (e) { return null; }
+  }
+
+  function tryZxingBarcode(img) {
+    try {
+      var canvas = drawToCanvas(img, 1600);
+      var r = new ZXing.BrowserMultiFormatReader();
+      var result = r.decodeFromCanvas(canvas);
+      if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return; }
+    } catch (e) { /* niet gevonden */ }
+    toast("Geen QR of barcode gevonden. Probeer een scherpere of rechtere foto.", "err");
   }
   dropzone.addEventListener("click", function () { fileInput.click(); });
   fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
