@@ -678,14 +678,45 @@
     } catch (e) { return null; }
   }
 
-  function tryZxingBarcode(img) {
+  function makeBarcodeReader() {
+    // TRY_HARDER + alle 1D-formaten expliciet: veel betrouwbaarder op foto's.
+    var hints = new Map();
     try {
-      var canvas = drawToCanvas(img, 1600);
-      var r = new ZXing.BrowserMultiFormatReader();
-      var result = r.decodeFromCanvas(canvas);
-      if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return; }
-    } catch (e) { /* niet gevonden */ }
-    toast("Geen QR of barcode gevonden. Probeer een scherpere of rechtere foto.", "err");
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      var BF = ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        BF.EAN_13, BF.EAN_8, BF.UPC_A, BF.UPC_E, BF.CODE_128, BF.CODE_39, BF.ITF, BF.CODABAR, BF.QR_CODE
+      ]);
+    } catch (e) { /* oudere ZXing: zonder hints */ }
+    return new ZXing.BrowserMultiFormatReader(hints);
+  }
+
+  function rotateCanvas90(canvas) {
+    var out = document.createElement("canvas");
+    out.width = canvas.height; out.height = canvas.width;
+    var ctx = out.getContext("2d");
+    ctx.translate(out.width / 2, out.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    return out;
+  }
+
+  function tryZxingBarcode(img) {
+    var reader = makeBarcodeReader();
+    // Meerdere schalen; barcodes hebben vaak een grotere resolutie nodig.
+    var sizes = [1600, 1000, 2200];
+    for (var s = 0; s < sizes.length; s++) {
+      var canvas = drawToCanvas(img, sizes[s]);
+      // normaal + 90 graden gedraaid (barcode staat vaak verticaal op de foto)
+      var variants = [canvas, rotateCanvas90(canvas)];
+      for (var vv = 0; vv < variants.length; vv++) {
+        try {
+          var result = reader.decodeFromCanvas(variants[vv]);
+          if (result) { handleResult(result.getText(), result.getBarcodeFormat()); return; }
+        } catch (e) { /* volgende poging */ }
+      }
+    }
+    toast("Geen QR of barcode gevonden. Probeer een scherpere, rechtere foto van dichtbij.", "err");
   }
   dropzone.addEventListener("click", function () { fileInput.click(); });
   fileInput.addEventListener("change", function (e) { if (e.target.files[0]) { decodeImageFile(e.target.files[0]); e.target.value = ""; } });
