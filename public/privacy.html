@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CardVault — Privacy Policy</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="vendor/fonts/fonts.css" rel="stylesheet">
 <style>
   :root { --bg:#07090d; --panel:rgba(255,255,255,0.035); --line:rgba(255,255,255,0.08);
     --text:#f2f5f9; --muted:#98a2b3; --faint:#5f6b7a; --accent:#5b9dff; --accent2:#8b5cf6; }
@@ -45,7 +45,7 @@
   </div>
 
   <h1>Privacy Policy</h1>
-  <div class="updated">Last updated: 5 July 2026</div>
+  <div class="updated">Last updated: 25 July 2026</div>
 
   <p>CardVault is a Garmin Connect IQ app that stores your loyalty cards, tickets and two‑factor (2FA) codes on your watch. This policy explains, in plain language, what happens to your data.</p>
 
@@ -64,16 +64,17 @@
   <h2>Where your cards are stored</h2>
   <p>Your cards (barcode numbers, QR contents, 2FA secrets, names and colours) are stored <strong>locally on your Garmin watch</strong>. You can add them in two ways:</p>
   <ul>
-    <li><strong>Garmin Connect settings</strong> — you paste your card data directly into the app settings. This never touches our server.</li>
+    <li><strong>Garmin Connect settings</strong> — you paste your card data directly into the app settings. This never touches our server. Note that Garmin app settings are stored in your Garmin Connect account, so card data (including 2FA secrets) added this way is kept by Garmin as ordinary app settings.</li>
     <li><strong>The companion website</strong> (cardvault.site) — scanning and reading of QR codes and barcodes happens entirely in your browser. Data is only sent anywhere when you actively choose to sync (see below).</li>
   </ul>
 
   <h2>The sync feature</h2>
   <p>If you choose to send cards from the website to your watch, the data is transmitted to our sync server, matched to a short pairing code shown on your watch, and picked up by the app. For this feature:</p>
   <ul>
-    <li>Data is held <strong>in memory only</strong> and is automatically deleted after at most <strong>30 minutes</strong>.</li>
+    <li>Data is held <strong>in memory only</strong>, is deleted moments after your watch has picked it up, and expires after at most <strong>30 minutes</strong> regardless.</li>
     <li>There is <strong>no database</strong> and the contents of your cards are <strong>not logged</strong>.</li>
     <li>Transmission uses an encrypted (HTTPS) connection.</li>
+    <li>Your watch holds a secret pairing token of 100 bits that the server generates; only that token can retrieve your cards. The 6-character code you type into the website is valid for 10 minutes, can be used once, and only grants permission to <em>send</em> cards to your watch.</li>
     <li>Using sync is entirely optional — you can add all cards via Garmin Connect instead, in which case no data ever reaches our server.</li>
   </ul>
 
@@ -82,9 +83,10 @@
 
   <h2>Security</h2>
   <ul>
-    <li>You can lock the app with an optional PIN.</li>
-    <li>Card data on the watch is stored in the app's private storage.</li>
-    <li>The sync server keeps data only transiently and never persists it.</li>
+    <li>You can lock the app with an optional PIN. The PIN is stored as a salted, repeatedly hashed SHA-256 digest — never as the code itself — and the screen locks for increasing periods after repeated wrong entries.</li>
+    <li>Card data on the watch is stored in the app's private storage. Connect IQ offers no encrypted key store, so treat the PIN as a lock on the display rather than as encryption of the data.</li>
+    <li>The website loads no external scripts, fonts or trackers: everything is served from our own domain, so your card and 2FA data never passes a third party.</li>
+    <li>The sync server keeps data only transiently and never persists it. You can disconnect a paired browser at any time from the watch menu (Disconnect sync).</li>
   </ul>
 
   <h2>Children</h2>

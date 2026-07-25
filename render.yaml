@@ -5,3 +5,8 @@ services:
     plan: starter
     buildCommand: npm install
     startCommand: node server.js
+    envVars:
+      # Geheim voor het afleiden van push-sleutels. Render genereert dit één
+      # keer en bewaart het, zodat koppelingen een herstart overleven.
+      - key: PAIR_SECRET
+        generateValue: true
