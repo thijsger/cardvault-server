@@ -183,6 +183,32 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---------- doorgeefstation: CORS ----------
+// /api/relay/* wordt aangeroepen door https://gerros.app/pair.html (ander domein)
+// en door het horloge (geen Origin). Alleen deze paden krijgen CORS; de rest van
+// de server blijft same-origin. Localhost alleen met RELAY_ALLOW_LOCALHOST=1 (test).
+const RELAY_ORIGINS = ["https://gerros.app", "https://www.gerros.app"];
+const RELAY_LOCAL = process.env.RELAY_ALLOW_LOCALHOST === "1";
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
+
+app.use("/api/relay", (req, res, next) => {
+  const origin = req.headers.origin;
+  res.set("Vary", "Origin");
+  if (origin) {
+    const ok = RELAY_ORIGINS.indexOf(origin) !== -1 || (RELAY_LOCAL && LOCAL_ORIGIN.test(origin));
+    if (!ok) { return res.status(403).json({ error: "origin" }); }
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Cross-Origin-Resource-Policy", "cross-origin");
+  }
+  if (req.method === "OPTIONS") {
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Max-Age", "600");
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: "64kb" }));
 app.use(express.static(path.join(__dirname, "public"), {
   dotfiles: "ignore",
@@ -266,6 +292,58 @@ app.post("/api/clear", limiter(60, 60 * 60 * 1000), (req, res) => {
   const token = (body.code || body.token || "").toString().trim().toUpperCase();
   if (isToken(token)) { pending.delete(pushKeyFor(token)); }
   res.json({ ok: true });
+});
+
+// ---------- doorgeefstation (Domora: koppelen via QR) ----------
+// De webpagina zet één versleuteld pakketje neer onder een code die het horloge
+// zelf heeft bedacht; het horloge haalt het één keer op en dan is het weg.
+// De sleutel staat alleen in de QR (achter de #) en komt hier nooit langs: de
+// server ziet alleen base64 die hij niet kan lezen. Alleen in het geheugen,
+// hooguit RELAY_TTL_MS, en de inhoud komt nooit in een log.
+const RELAY_TTL_MS = 10 * 60 * 1000;
+const MAX_RELAY = 2000;             // harde bovengrens op openstaande codes
+const MAX_RELAY_CHARS = 4096;
+const isRelayCode = (v) => typeof v === "string" && /^[a-z2-9]{10}$/.test(v);
+const isRelayData = (v) => typeof v === "string" && v.length >= 44 && v.length <= MAX_RELAY_CHARS &&
+  v.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(v);
+
+// code -> { data, expires }
+const relay = new Map();
+
+function sweepRelay() {
+  const now = Date.now();
+  for (const [k, e] of relay) { if (e.expires <= now) { relay.delete(k); } }
+}
+setInterval(sweepRelay, 30 * 1000).unref();
+
+// Wekt een slapende server terwijl de gebruiker nog aan het inloggen is.
+app.get("/api/relay/ping", limiter(120, 10 * 60 * 1000), (req, res) => res.json({ ok: true }));
+
+app.post("/api/relay/put", limiter(30, 10 * 60 * 1000), (req, res) => {
+  const body = req.body || {};
+  if (!isRelayCode(body.code)) { return res.status(400).json({ error: "code" }); }
+  if (!isRelayData(body.data)) { return res.status(400).json({ error: "data" }); }
+
+  const now = Date.now();
+  const old = relay.get(body.code);
+  if (old && old.expires > now) { return res.status(409).json({ error: "taken" }); }
+  if (!old && relay.size >= MAX_RELAY) {
+    sweepRelay();
+    if (relay.size >= MAX_RELAY) { return res.status(503).json({ error: "full" }); }
+  }
+  relay.set(body.code, { data: body.data, expires: now + RELAY_TTL_MS });
+  res.json({ ok: true });
+});
+
+// Het horloge vraagt elke paar seconden of er iets klaarstaat. Eenmalig: na een
+// 200 is de code leeg. Al het andere (onbekend, verlopen, ongeldig) is 404.
+app.get("/api/relay/get", limiter(600, 10 * 60 * 1000), (req, res) => {
+  const code = (req.query.code || "").toString();
+  const entry = isRelayCode(code) ? relay.get(code) : null;
+  if (!entry) { return res.status(404).json({ error: "none" }); }
+  relay.delete(code);
+  if (entry.expires <= Date.now()) { return res.status(404).json({ error: "none" }); }
+  res.json({ data: entry.data });
 });
 
 app.get("/api/health", limiter(60, 60 * 1000), (req, res) => res.json({ ok: true }));
